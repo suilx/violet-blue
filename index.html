@@ -35,6 +35,18 @@
     height: 200vh;              /* 可滚动 100vh，驱动抽屉 */
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+  textarea, input, [contenteditable] {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
   }
 
   /* ============ 第一块：圣经十字架（stage，下滑渐隐） ============ */
@@ -251,6 +263,8 @@
   }
   .wgroup {
     display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: center;
     white-space: nowrap;
   }
   .wspace {
@@ -812,7 +826,9 @@
     header { padding: 28px 24px; }
     header .logo { letter-spacing: 0.22em; text-indent: 0.22em; }
     .cross svg { width: 90px; }
-    .scripture { padding: 8vh 8vw 8vh; }
+    .scripture { padding: 6vh 6vw 6vh; }
+    .lyrics-body { min-height: 34vh; padding: 1.5em 0.9em; }
+    .lyrics-line { font-size: clamp(15px, 4.6vw, 20px); line-height: 1.5; row-gap: 0.4em; }
     .drawer { width: 88vw; }
     .drawer-content { padding: 40px 28px; }
   }
