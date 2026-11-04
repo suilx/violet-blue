@@ -102,6 +102,7 @@
     transition: opacity 2.2s ease;
   }
   .wall.on { opacity: 1; }
+  .wall.on .word { pointer-events: auto; }
   .wall .word {
     flex-shrink: 0;
     display: inline-flex;
@@ -411,6 +412,15 @@
     transition: transform .5s cubic-bezier(.22,.61,.36,1);
     overflow: hidden;
   }
+  .side-orn {
+    position: absolute;
+    width: 128px;
+    height: 128px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .side-orn-br { bottom: 0; right: 0; transform: scale(-1, -1); }
+  .side-orn svg { width: 100%; height: 100%; display: block; }
   .sidebar.open { pointer-events: auto; }
   .sidebar.open .sidebar-scrim { opacity: 1; }
   .sidebar.open .sidebar-body { transform: translateX(0); }
@@ -539,10 +549,26 @@
   }
   .side-group { border-bottom: 1px solid rgba(var(--ink),0.06); }
   .side-sub {
+    position: relative;
     max-height: 0;
     overflow: hidden;
     opacity: 0;
     transition: max-height .45s ease, opacity .35s ease;
+  }
+  .side-sub::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(rgba(var(--ink),0.24), rgba(var(--ink),0.24)) top 5px left 5px / 14px 1px no-repeat,
+      linear-gradient(rgba(var(--ink),0.24), rgba(var(--ink),0.24)) top 5px left 5px / 1px 14px no-repeat,
+      linear-gradient(rgba(var(--ink),0.24), rgba(var(--ink),0.24)) top 5px right 5px / 14px 1px no-repeat,
+      linear-gradient(rgba(var(--ink),0.24), rgba(var(--ink),0.24)) top 5px right 5px / 1px 14px no-repeat,
+      linear-gradient(rgba(var(--ink),0.24), rgba(var(--ink),0.24)) bottom 5px left 5px / 14px 1px no-repeat,
+      linear-gradient(rgba(var(--ink),0.24), rgba(var(--ink),0.24)) bottom 5px left 5px / 1px 14px no-repeat,
+      linear-gradient(rgba(var(--ink),0.24), rgba(var(--ink),0.24)) bottom 5px right 5px / 14px 1px no-repeat,
+      linear-gradient(rgba(var(--ink),0.24), rgba(var(--ink),0.24)) bottom 5px right 5px / 1px 14px no-repeat;
   }
   .side-group.open .side-sub {
     max-height: 320px;
@@ -903,6 +929,14 @@
   <div class="sidebar" id="sidebar">
     <div class="sidebar-scrim" id="sidebarScrim"></div>
     <aside class="sidebar-body">
+      <svg class="side-orn side-orn-br" viewBox="0 0 128 128" aria-hidden="true">
+        <g fill="none" stroke="rgba(var(--ink),0.15)" stroke-width="1">
+          <path d="M 28 0 A 28 28 0 0 1 0 28"/>
+          <path d="M 50 0 A 50 50 0 0 1 0 50"/>
+          <path d="M 72 0 A 72 72 0 0 1 0 72"/>
+          <path d="M 94 0 A 94 94 0 0 1 0 94"/>
+        </g>
+      </svg>
       <div class="side-layer" id="sideMenu">
         <div class="side-head">
           <span class="side-title">MENU</span>
@@ -1131,6 +1165,29 @@
         requestAnimationFrame(tick);
       }
 
+      // 鼠标划过单词 → 字符波浪式弹跳（平滑位移，避免随机字母滚动的鬼畜感）
+      function hop(wordEl) {
+        var chs = wordEl.querySelectorAll('.ch');
+        for (var i = 0; i < chs.length; i++) {
+          (function (ch, i) {
+            var delay = i * 46;
+            setTimeout(function () {
+              ch.style.transition = 'transform .2s cubic-bezier(.3,.7,.4,1)';
+              ch.style.transform = 'translateY(-0.16em)';
+            }, delay);
+            setTimeout(function () {
+              ch.style.transition = 'transform .45s cubic-bezier(.34,1.56,.64,1)';
+              ch.style.transform = 'translateY(0)';
+            }, delay + 190);
+          })(chs[i], i);
+        }
+      }
+      for (var h = 0; h < wordEls.length; h++) {
+        wordEls[h].addEventListener('mouseenter', function () {
+          hop(this);
+        });
+      }
+
       var btn = document.getElementById('crossBtn');
       var audio = document.getElementById('music');
       var box = document.getElementById('wall');
@@ -1173,49 +1230,49 @@
       ];
 
       var burqaLyrics = [
-        { t: 15, text: 'I feel in the air' },
-        { t: 22, text: 'Like dust in the air' },
-        { t: 29, text: 'My hurt plea is just a little game' },
-        { t: 36, text: 'The city is on fire' },
-        { t: 43, text: 'The city is on fire' },
-        { t: 50, text: 'I feel in the air' },
-        { t: 57, text: 'Like dust in the air' },
-        { t: 64, text: 'My hurt plea is just a little game' },
-        { t: 71, text: "Who's the real criminal" },
-        { t: 78, text: "Who's the real criminal" },
-        { t: 85, text: 'Everyone has a fault' },
-        { t: 92, text: 'Violence is a fault' },
-        { t: 99, text: 'Ignorance is fault' },
-        { t: 106, text: 'The West has a fault' },
-        { t: 113, text: 'Please stop the bomb' },
-        { t: 120, text: 'Stop the blood' },
-        { t: 127, text: "I don't want to feel guilty" },
-        { t: 134, text: 'Kids are crying down the road' },
-        { t: 141, text: 'Kids are crying down the road' },
-        { t: 148, text: 'Please stop the bomb' },
-        { t: 155, text: 'Stop the blood' },
-        { t: 162, text: "I don't want to feel guilty" },
-        { t: 169, text: 'Kids are crying down the road' },
-        { t: 176, text: 'Kids are crying down the road' },
-        { t: 183, text: 'I feel in the air' },
-        { t: 190, text: 'Like dust in the air' },
-        { t: 197, text: 'My hurt plea is just a little game' },
-        { t: 204, text: 'The city is on fire' },
-        { t: 211, text: 'The city is on fire' },
-        { t: 218, text: 'Please stop the bomb' },
-        { t: 225, text: 'Stop the blood' },
-        { t: 232, text: "I don't want to feel guilty" },
-        { t: 239, text: 'Kids are crying down the road' },
-        { t: 246, text: 'Kids are crying down the road' },
-        { t: 253, text: 'Please stop the bomb' },
-        { t: 260, text: 'Stop the blood' },
-        { t: 267, text: "I don't want to feel guilty" },
-        { t: 274, text: 'Kids are crying down the road' },
-        { t: 281, text: 'Kids are crying down the road' },
-        { t: 288, text: 'Kids are crying down the road' },
-        { t: 295, text: 'Kids are crying down the road' },
-        { t: 302, text: 'Kids are crying down the road' },
-        { t: 309, text: 'Kids are crying down the road' }
+        { t: 64.74, text: 'I feel in the air' },
+        { t: 69.06, text: 'Like dust in the air' },
+        { t: 73.28, text: 'My hurt plea is just a little game' },
+        { t: 81.52, text: 'The city is on fire' },
+        { t: 88.54, text: 'The city is on fire' },
+        { t: 99.42, text: 'I feel in the air' },
+        { t: 103.72, text: 'Like dust in the air' },
+        { t: 108.16, text: 'My hurt plea is just a little game' },
+        { t: 116.98, text: "Who's the real criminal" },
+        { t: 123.52, text: "Who's the real criminal" },
+        { t: 133.96, text: 'Everyone has a fault' },
+        { t: 138.36, text: 'Violence is a fault' },
+        { t: 143.06, text: 'Ignorance is fault' },
+        { t: 146.82, text: 'The West has a fault' },
+        { t: 151.84, text: 'Please stop the bomb' },
+        { t: 155.54, text: 'Stop the blood' },
+        { t: 157.42, text: "I don't want to feel guilty" },
+        { t: 161.60, text: 'Kids are crying down the road' },
+        { t: 166.14, text: 'Kids are crying down the road' },
+        { t: 169.58, text: 'Please stop the bomb' },
+        { t: 172.68, text: 'Stop the blood' },
+        { t: 175.20, text: "I don't want to feel guilty" },
+        { t: 177.54, text: 'Kids are crying down the road' },
+        { t: 184.02, text: 'Kids are crying down the road' },
+        { t: 204.06, text: 'I feel in the air' },
+        { t: 208.28, text: 'Like dust in the air' },
+        { t: 212.42, text: 'My hurt plea is just a little game' },
+        { t: 220.78, text: 'The city is on fire' },
+        { t: 229.58, text: 'The city is on fire' },
+        { t: 239.58, text: 'Please stop the bomb' },
+        { t: 242.22, text: 'Stop the blood' },
+        { t: 245.58, text: "I don't want to feel guilty" },
+        { t: 249.58, text: 'Kids are crying down the road' },
+        { t: 253.22, text: 'Kids are crying down the road' },
+        { t: 256.58, text: 'Please stop the bomb' },
+        { t: 260.14, text: 'Stop the blood' },
+        { t: 262.42, text: "I don't want to feel guilty" },
+        { t: 266.50, text: 'Kids are crying down the road' },
+        { t: 269.10, text: 'Kids are crying down the road' },
+        { t: 270.86, text: 'Kids are crying down the road' },
+        { t: 273.38, text: 'Kids are crying down the road' },
+        { t: 274.64, text: 'Kids are crying down the road' },
+        { t: 277.44, text: 'Kids are crying down the road' }
       ];
 
       var controlLyrics = [
