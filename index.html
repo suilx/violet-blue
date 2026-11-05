@@ -1781,12 +1781,37 @@
           requestAnimationFrame(update);
         }
       }
-      // ===== scroll damping: lerp smooth, buffered descent =====
+      // ===== 滚动阻尼 + 翻页过渡：第一页→第二页用 ease 缓动，第二页内部用 lerp =====
       var scrollTarget = 0;
       var scrollCurrent = 0;
       var scrollAnimating = false;
+      var scrollSnapLocked = false;
+      var scrollSnapAccum = 0;
+      var easeFrom = 0, easeTo = 0, easeStart = 0, easeDur = 1000, easeRunning = false;
       function maxScroll() {
         return Math.max(0, (document.body.scrollHeight || 0) - (window.innerHeight || 1));
+      }
+      function easeInOutCubic(t) {
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      }
+      function easeStep() {
+        var t = Math.min(1, (Date.now() - easeStart) / easeDur);
+        scrollCurrent = easeFrom + (easeTo - easeFrom) * easeInOutCubic(t);
+        window.scrollTo(0, scrollCurrent);
+        if (t < 1) {
+          requestAnimationFrame(easeStep);
+        } else {
+          easeRunning = false;
+          scrollCurrent = easeTo;
+        }
+      }
+      function startEase(to) {
+        easeFrom = window.scrollY || 0;
+        easeTo = to;
+        easeStart = Date.now();
+        easeRunning = true;
+        scrollAnimating = false;
+        requestAnimationFrame(easeStep);
       }
       function scrollStep() {
         scrollCurrent += (scrollTarget - scrollCurrent) * 0.16;
@@ -1797,9 +1822,8 @@
         window.scrollTo(0, scrollCurrent);
         if (scrollAnimating) requestAnimationFrame(scrollStep);
       }
-      var scrollSnapLocked = false;
-      var scrollSnapAccum = 0;
       function startLerp() {
+        easeRunning = false;
         scrollCurrent = window.scrollY || 0;
         if (!scrollAnimating) {
           scrollAnimating = true;
@@ -1815,8 +1839,7 @@
           if (delta < 0) {
             scrollSnapLocked = false;
             scrollSnapAccum = 0;
-            scrollTarget = 0;
-            startLerp();
+            startEase(0);
           } else {
             scrollSnapAccum += delta;
             if (scrollSnapAccum > 400) {
@@ -1830,13 +1853,14 @@
           return;
         }
         var next = scrollTarget + delta;
-        if (delta > 0 && scrollTarget < vh && next > vh) {
-          scrollTarget = vh;
+        if (delta > 0 && scrollTarget < vh && next >= vh) {
+          startEase(vh);
           scrollSnapLocked = true;
           scrollSnapAccum = 0;
-          startLerp();
+        } else if (delta < 0 && scrollTarget <= vh && scrollTarget > 0) {
+          startEase(0);
         } else {
-          scrollTarget = Math.max(0, Math.min(maxScroll(), next));
+          scrollTarget = Math.max(vh, Math.min(maxScroll(), next));
           startLerp();
         }
       }, { passive: false });
