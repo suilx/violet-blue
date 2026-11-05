@@ -1782,6 +1782,33 @@
           requestAnimationFrame(update);
         }
       }
+      // ===== scroll damping: lerp smooth, buffered descent =====
+      var scrollTarget = 0;
+      var scrollCurrent = 0;
+      var scrollAnimating = false;
+      function maxScroll() {
+        return Math.max(0, (document.body.scrollHeight || 0) - (window.innerHeight || 1));
+      }
+      function scrollStep() {
+        scrollCurrent += (scrollTarget - scrollCurrent) * 0.16;
+        if (Math.abs(scrollTarget - scrollCurrent) < 0.4) {
+          scrollCurrent = scrollTarget;
+          scrollAnimating = false;
+        }
+        window.scrollTo(0, scrollCurrent);
+        if (scrollAnimating) requestAnimationFrame(scrollStep);
+      }
+      window.addEventListener('wheel', function (e) {
+        if (e.ctrlKey || e.metaKey) return;
+        e.preventDefault();
+        scrollTarget = Math.max(0, Math.min(maxScroll(), scrollTarget + e.deltaY));
+        if (!scrollAnimating) {
+          scrollAnimating = true;
+          scrollCurrent = window.scrollY || 0;
+          requestAnimationFrame(scrollStep);
+        }
+      }, { passive: false });
+
       window.addEventListener('scroll', onScroll, { passive: true });
       window.addEventListener('resize', measure);
       measure();
