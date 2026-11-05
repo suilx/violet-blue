@@ -1004,7 +1004,7 @@
         <span class="game-msg" id="gameMsg">PRESS SPACE / CLICK TO JUMP</span>
       </div>
     </div>
-    <div class="game-hint">SPACE / CLICK TO JUMP · DODGE THE SPIRES</div>
+    <div class="game-hint">SPACE / CLICK JUMP · DOWN / S DUCK</div>
     <div class="game-board" id="gameBoard">
       <div class="board-title">TOP SCORES</div>
       <ol class="board-list" id="boardList"></ol>
@@ -2242,7 +2242,7 @@
         }, 2600);
         sidebar.classList.remove('open');
       }
-      // ===== RUNNER GAME: cross dodges church spires =====
+      // ===== RUNNER GAME: cross dodges spires & doves =====
       (function () {
         var canvas = document.getElementById('gameCanvas');
         var ctx = canvas.getContext('2d');
@@ -2251,7 +2251,8 @@
         var msgEl = document.getElementById('gameMsg');
         var boardList = document.getElementById('boardList');
         var W = 800, H = 400, groundY = H - 56;
-        var player = { x: 96, w: 30, h: 42, y: groundY - 42, vy: 0, jumping: false };
+        var PLAYER_H = 42, DUCK_H = 22;
+        var player = { x: 96, w: 30, h: PLAYER_H, y: groundY - PLAYER_H, vy: 0, jumping: false, ducking: false };
         var gravity = 0.7, jumpV = -13.5;
         var obstacles = [], score = 0, speed = 6, state = 'ready', frame = 0;
         var nextGap = 380, dist = 0;
@@ -2261,23 +2262,47 @@
           var v = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
           return v ? 'rgb(' + v + ')' : 'rgb(255,255,255)';
         }
-        function drawCross(x, y, w, h, c) {
+        function drawCross(p, c) {
           ctx.save();
           ctx.shadowColor = c; ctx.shadowBlur = 9;
           ctx.fillStyle = c;
+          var w = p.w, h = p.h;
           var bw = w * 0.28, bh = h * 0.34;
-          ctx.fillRect(x + (w - bw) / 2, y, bw, h);
-          ctx.fillRect(x, y + h * 0.24, w, bw);
+          ctx.fillRect(p.x + (w - bw) / 2, p.y, bw, h);
+          ctx.fillRect(p.x, p.y + h * 0.24, w, bw);
           ctx.restore();
         }
-        function drawSpire(x, y, w, h, c) {
-          ctx.strokeStyle = c; ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
+        function spirePath(x, y, w, h) {
           var baseY = y + h * 0.5;
           ctx.beginPath(); ctx.moveTo(x + w / 2, y); ctx.lineTo(x + w, baseY); ctx.lineTo(x, baseY); ctx.closePath(); ctx.stroke();
           ctx.strokeRect(x, baseY, w, h * 0.5);
           var ww = w * 0.36, wh = h * 0.22, wx = x + (w - ww) / 2, wy = baseY + h * 0.15;
           ctx.beginPath(); ctx.moveTo(wx, wy + wh); ctx.lineTo(wx, wy + wh * 0.5);
           ctx.arc(wx + ww / 2, wy + wh * 0.5, ww / 2, Math.PI, 0); ctx.lineTo(wx + ww, wy + wh); ctx.closePath(); ctx.stroke();
+        }
+        function drawSpire(x, y, w, h, c) { ctx.strokeStyle = c; ctx.lineWidth = 1.5; ctx.lineJoin = 'round'; spirePath(x, y, w, h); }
+        function drawSpires2(x, y, w, h, c) {
+          ctx.strokeStyle = c; ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
+          spirePath(x, y, w * 0.5, h);
+          spirePath(x + w * 0.5, y + h * 0.14, w * 0.5, h * 0.86);
+        }
+        function drawSpires3(x, y, w, h, c) {
+          ctx.strokeStyle = c; ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
+          spirePath(x, y, w * 0.34, h);
+          spirePath(x + w * 0.33, y + h * 0.18, w * 0.34, h * 0.82);
+          spirePath(x + w * 0.66, y + h * 0.06, w * 0.34, h * 0.94);
+        }
+        function drawDove(x, y, w, h, c) {
+          ctx.strokeStyle = c; ctx.lineWidth = 1.6; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(x, y + h * 0.75); ctx.quadraticCurveTo(x + w * 0.5, y + h * 0.25, x + w, y + h * 0.75); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(x + w * 0.3, y + h * 0.55); ctx.quadraticCurveTo(x + w * 0.5, y - h * 0.35, x + w * 0.72, y + h * 0.55); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(x + w * 0.86, y + h * 0.62); ctx.lineTo(x + w, y + h * 0.7); ctx.stroke();
+        }
+        function drawObstacle(o, c) {
+          if (o.type === 'spires2') drawSpires2(o.x, o.y, o.w, o.h, c);
+          else if (o.type === 'spires3') drawSpires3(o.x, o.y, o.w, o.h, c);
+          else if (o.type === 'dove') drawDove(o.x, o.y, o.w, o.h, c);
+          else drawSpire(o.x, o.y, o.w, o.h, c);
         }
         function drawBackground(c) {
           ctx.fillStyle = c; ctx.globalAlpha = 0.07;
@@ -2295,13 +2320,23 @@
           ctx.globalAlpha = 1;
         }
         function spawnObstacle() {
-          var oh = 36 + Math.random() * 42;
-          obstacles.push({ x: W + 30, y: groundY - oh, w: 24, h: oh });
+          var r = Math.random(), o;
+          if (r < 0.4) { o = { type: 'spire', w: 24, h: 40 + Math.random() * 34 }; }
+          else if (r < 0.68) { o = { type: 'spires2', w: 50, h: 40 + Math.random() * 28 }; }
+          else if (r < 0.88) { o = { type: 'spires3', w: 78, h: 38 + Math.random() * 26 }; }
+          else { o = { type: 'dove', w: 40, h: 24 }; }
+          if (o.type === 'dove') {
+            o.y = groundY - o.h - 46 - Math.random() * 14;
+          } else {
+            o.y = groundY - o.h;
+          }
+          o.x = W + 30;
+          obstacles.push(o);
           var minGap = 320 + speed * 26;
           nextGap = minGap + Math.random() * 260;
         }
         function reset() {
-          player.y = groundY - player.h; player.vy = 0; player.jumping = false;
+          player.y = groundY - PLAYER_H; player.vy = 0; player.jumping = false; player.ducking = false; player.h = PLAYER_H;
           obstacles = []; score = 0; speed = 6; frame = 0; nextGap = 380; dist = 0; scoreEl.textContent = '0';
         }
         function collide(p, o) { return p.x < o.x + o.w && p.x + p.w > o.x && p.y < o.y + o.h && p.y + p.h > o.y; }
@@ -2334,6 +2369,14 @@
           if (state === 'ready') { state = 'playing'; overlay.style.display = 'none'; }
           if (state === 'playing' && !player.jumping) { player.vy = jumpV; player.jumping = true; }
         }
+        function setDuck(on) {
+          if (state !== 'playing') return;
+          if (on && !player.jumping) {
+            player.ducking = true; player.h = DUCK_H; player.y = groundY - DUCK_H;
+          } else if (!on) {
+            player.ducking = false; player.h = PLAYER_H; player.y = groundY - PLAYER_H;
+          }
+        }
         function update() {
           if (player.jumping || player.y < groundY - player.h) {
             player.vy += gravity; player.y += player.vy;
@@ -2355,8 +2398,8 @@
           ctx.clearRect(0, 0, W, H);
           drawBackground(c);
           drawGround(c);
-          drawCross(player.x, player.y, player.w, player.h, c);
-          for (var i = 0; i < obstacles.length; i++) { drawSpire(obstacles[i].x, obstacles[i].y, obstacles[i].w, obstacles[i].h, c); }
+          drawCross(player, c);
+          for (var i = 0; i < obstacles.length; i++) { drawObstacle(obstacles[i], c); }
         }
         function loop() {
           if (state === 'playing') update();
@@ -2367,8 +2410,12 @@
         canvas.addEventListener('click', jump);
         document.addEventListener('keydown', function (e) {
           if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); jump(); }
+          if (e.code === 'ArrowDown' || e.code === 'KeyS') { e.preventDefault(); setDuck(true); }
         });
-        reset(); renderBoard(); msgEl.textContent = 'PRESS SPACE / CLICK TO JUMP';
+        document.addEventListener('keyup', function (e) {
+          if (e.code === 'ArrowDown' || e.code === 'KeyS') setDuck(false);
+        });
+        reset(); renderBoard(); msgEl.textContent = 'PRESS SPACE TO JUMP \u00b7 DOWN TO DUCK';
         loop();
       })();
     })();
