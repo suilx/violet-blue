@@ -1785,8 +1785,6 @@
       var scrollTarget = 0;
       var scrollCurrent = 0;
       var scrollAnimating = false;
-      var scrollSnapLocked = false;
-      var scrollSnapAccum = 0;
       var easeFrom = 0, easeTo = 0, easeStart = 0, easeDur = 1000, easeRunning = false;
       function maxScroll() {
         return Math.max(0, (document.body.scrollHeight || 0) - (window.innerHeight || 1));
@@ -1808,13 +1806,14 @@
       function startEase(to) {
         easeFrom = window.scrollY || 0;
         easeTo = to;
+        scrollTarget = to;
         easeStart = Date.now();
         easeRunning = true;
         scrollAnimating = false;
         requestAnimationFrame(easeStep);
       }
       function scrollStep() {
-        scrollCurrent += (scrollTarget - scrollCurrent) * 0.16;
+        scrollCurrent += (scrollTarget - scrollCurrent) * 0.25;
         if (Math.abs(scrollTarget - scrollCurrent) < 0.4) {
           scrollCurrent = scrollTarget;
           scrollAnimating = false;
@@ -1835,29 +1834,14 @@
         e.preventDefault();
         var vh = window.innerHeight || 1;
         var delta = e.deltaY;
-        if (scrollSnapLocked) {
-          if (delta < 0) {
-            scrollSnapLocked = false;
-            scrollSnapAccum = 0;
-            startEase(0);
-          } else {
-            scrollSnapAccum += delta;
-            if (scrollSnapAccum > 400) {
-              scrollSnapLocked = false;
-              var extra = scrollSnapAccum;
-              scrollSnapAccum = 0;
-              scrollTarget = Math.min(maxScroll(), vh + extra);
-              startLerp();
-            }
+        if (scrollTarget < vh) {
+          if (delta > 0) {
+            startEase(vh);
           }
           return;
         }
         var next = scrollTarget + delta;
-        if (delta > 0 && scrollTarget < vh && next >= vh) {
-          startEase(vh);
-          scrollSnapLocked = true;
-          scrollSnapAccum = 0;
-        } else if (delta < 0 && scrollTarget <= vh && scrollTarget > 0) {
+        if (delta < 0 && next < vh) {
           startEase(0);
         } else {
           scrollTarget = Math.max(vh, Math.min(maxScroll(), next));
