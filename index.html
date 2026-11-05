@@ -1799,7 +1799,6 @@
       }
       var scrollSnapLocked = false;
       var scrollSnapAccum = 0;
-      var scrollSnapLockUntil = 0;
       function startLerp() {
         scrollCurrent = window.scrollY || 0;
         if (!scrollAnimating) {
@@ -1817,9 +1816,8 @@
             scrollSnapLocked = false;
             scrollSnapAccum = 0;
             scrollTarget = 0;
-            scrollCurrent = 0;
-            window.scrollTo(0, 0);
-          } else if (Date.now() >= scrollSnapLockUntil) {
+            startLerp();
+          } else {
             scrollSnapAccum += delta;
             if (scrollSnapAccum > 400) {
               scrollSnapLocked = false;
@@ -1831,24 +1829,14 @@
           }
           return;
         }
-        if (scrollTarget < vh) {
-          if (delta > 0) {
-            scrollTarget = vh;
-            scrollCurrent = vh;
-            window.scrollTo(0, vh);
-            scrollSnapLocked = true;
-            scrollSnapAccum = 0;
-            scrollSnapLockUntil = Date.now() + 250;
-          }
-          return;
-        }
         var next = scrollTarget + delta;
-        if (next <= vh && delta < 0) {
-          scrollTarget = 0;
-          scrollCurrent = 0;
-          window.scrollTo(0, 0);
+        if (delta > 0 && scrollTarget < vh && next > vh) {
+          scrollTarget = vh;
+          scrollSnapLocked = true;
+          scrollSnapAccum = 0;
+          startLerp();
         } else {
-          scrollTarget = Math.max(vh, Math.min(maxScroll(), next));
+          scrollTarget = Math.max(0, Math.min(maxScroll(), next));
           startLerp();
         }
       }, { passive: false });
