@@ -439,6 +439,10 @@
     z-index: 0;
   }
   .side-orn-br { bottom: 0; right: 0; transform: scale(-1, -1); }
+  .side-orn-tl { top: 0; left: 0; }
+  .side-arch { width: 100%; height: auto; display: block; pointer-events: none; }
+  .side-arch svg { width: 100%; height: auto; display: block; }
+
   .side-orn svg { width: 100%; height: 100%; display: block; }
   .sidebar.open { pointer-events: auto; }
   .sidebar.open .sidebar-scrim { opacity: 1; }
@@ -1028,6 +1032,13 @@
   <div class="sidebar" id="sidebar">
     <div class="sidebar-scrim" id="sidebarScrim"></div>
     <aside class="sidebar-body">
+      <svg class="side-orn side-orn-tl" viewBox="0 0 128 128" aria-hidden="true">
+        <g fill="none" stroke="rgba(var(--ink),0.15)" stroke-width="1">
+          <path d="M 64 6 L 116 116 L 12 116 Z"/>
+          <path d="M 64 24 L 100 116 L 28 116 Z"/>
+          <path d="M 64 42 L 86 116 L 42 116 Z"/>
+        </g>
+      </svg>
       <svg class="side-orn side-orn-br" viewBox="0 0 128 128" aria-hidden="true">
         <g fill="none" stroke="rgba(var(--ink),0.15)" stroke-width="1">
           <path d="M 28 0 A 28 28 0 0 1 0 28"/>
@@ -1037,6 +1048,12 @@
         </g>
       </svg>
       <div class="side-layer" id="sideMenu">
+        <svg class="side-arch" viewBox="0 0 400 110" aria-hidden="true">
+          <g fill="none" stroke="rgba(var(--ink),0.14)" stroke-width="1">
+            <path d="M 28 110 L 28 52 C 28 24 70 10 200 10 C 330 10 372 24 372 52 L 372 110"/>
+            <path d="M 68 110 L 68 62 C 68 42 96 30 200 30 C 304 30 332 42 332 62 L 332 110"/>
+          </g>
+        </svg>
         <div class="side-head">
           <span class="side-title">MENU</span>
           <button class="side-close" id="sideClose" aria-label="close">&#10005;</button>
