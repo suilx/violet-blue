@@ -685,6 +685,29 @@
     transition: transform .45s cubic-bezier(.22,.61,.36,1);
   }
   .guestbook-stage.open .guestbook-panel { transform: translateY(0); }
+  .link-panel {
+    width: min(860px, 94vw);
+    height: 86vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    border: 1px solid rgba(var(--ink),0.12);
+    transform: translateY(14px);
+    transition: transform .45s cubic-bezier(.22,.61,.36,1);
+  }
+  .guestbook-stage.open .link-panel { transform: translateY(0); }
+  .link-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(var(--ink),0.12);
+  }
+  .link-title { font-size: 14px; color: rgba(var(--ink),0.7); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .link-open-new { color: rgba(var(--ink),0.9); text-decoration: underline; font-size: 13px; white-space: nowrap; }
+  .link-frame { flex: 1; width: 100%; border: none; background: #fff; }
+
   .guestbook-close {
     position: absolute;
     top: 22px;
@@ -1059,6 +1082,16 @@
         crossorigin="anonymous"
         async>
       </script>
+    </div>
+  </div>
+  <div class="guestbook-stage" id="linkStage">
+    <button class="guestbook-close" id="linkClose" aria-label="close">&#10005;</button>
+    <div class="link-panel">
+      <div class="link-bar">
+        <span class="link-title" id="linkTitle">&#8230;</span>
+        <a class="link-open-new" id="linkOpenNew" href="#" target="_blank" rel="noopener noreferrer">新标签打开 &#8599;</a>
+      </div>
+      <iframe class="link-frame" id="linkFrame" src="" loading="lazy"></iframe>
     </div>
   </div>
 
@@ -2059,6 +2092,33 @@
       function closeGuestbook() {
         guestbookStage.classList.remove('open');
       }
+
+      // ===== 站内打开外部链接 =====
+      var linkStage = document.getElementById('linkStage');
+      var linkFrame = document.getElementById('linkFrame');
+      var linkTitle = document.getElementById('linkTitle');
+      var linkOpenNew = document.getElementById('linkOpenNew');
+      function openLink(url, title) {
+        linkTitle.textContent = title || url;
+        linkOpenNew.href = url;
+        linkFrame.src = url;
+        linkStage.classList.add('open');
+      }
+      function closeLink() {
+        linkStage.classList.remove('open');
+        linkFrame.src = '';
+      }
+      document.getElementById('linkClose').addEventListener('click', closeLink);
+      linkStage.addEventListener('click', function (e) {
+        if (e.target === linkStage) closeLink();
+      });
+      document.addEventListener('click', function (e) {
+        var a = e.target && e.target.closest ? e.target.closest('.sidebar-body a[target="_blank"]') : null;
+        if (a) {
+          e.preventDefault();
+          openLink(a.href, a.textContent.trim());
+        }
+      });
       document.getElementById('guestbookClose').addEventListener('click', closeGuestbook);
       document.getElementById('guestbookStage').addEventListener('click', function (e) {
         if (e.target === guestbookStage) closeGuestbook();
