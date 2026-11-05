@@ -2242,7 +2242,7 @@
         }, 2600);
         sidebar.classList.remove('open');
       }
-      // ===== RUNNER GAME: cross dodges spires & doves =====
+      // ===== RUNNER GAME: cross dodges spires & moons =====
       (function () {
         var canvas = document.getElementById('gameCanvas');
         var ctx = canvas.getContext('2d');
@@ -2292,16 +2292,19 @@
           spirePath(x + w * 0.33, y + h * 0.18, w * 0.34, h * 0.82);
           spirePath(x + w * 0.66, y + h * 0.06, w * 0.34, h * 0.94);
         }
-        function drawDove(x, y, w, h, c) {
-          ctx.strokeStyle = c; ctx.lineWidth = 1.6; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-          ctx.beginPath(); ctx.moveTo(x, y + h * 0.75); ctx.quadraticCurveTo(x + w * 0.5, y + h * 0.25, x + w, y + h * 0.75); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(x + w * 0.3, y + h * 0.55); ctx.quadraticCurveTo(x + w * 0.5, y - h * 0.35, x + w * 0.72, y + h * 0.55); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(x + w * 0.86, y + h * 0.62); ctx.lineTo(x + w, y + h * 0.7); ctx.stroke();
+        function drawCrescent(x, y, w, h, c) {
+          ctx.strokeStyle = c; ctx.lineWidth = 1.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+          var cx = x + w / 2, cy = y + h / 2;
+          var R = Math.min(w, h) * 0.44;
+          ctx.beginPath();
+          ctx.arc(cx, cy, R, 0.12 * Math.PI, 1.88 * Math.PI);
+          ctx.arc(cx - R * 0.5, cy, R * 0.74, 1.88 * Math.PI, 0.12 * Math.PI, true);
+          ctx.stroke();
         }
         function drawObstacle(o, c) {
           if (o.type === 'spires2') drawSpires2(o.x, o.y, o.w, o.h, c);
           else if (o.type === 'spires3') drawSpires3(o.x, o.y, o.w, o.h, c);
-          else if (o.type === 'dove') drawDove(o.x, o.y, o.w, o.h, c);
+          else if (o.type === 'moon') drawCrescent(o.x, o.y, o.w, o.h, c);
           else drawSpire(o.x, o.y, o.w, o.h, c);
         }
         function drawBackground(c) {
@@ -2324,8 +2327,8 @@
           if (r < 0.4) { o = { type: 'spire', w: 24, h: 40 + Math.random() * 34 }; }
           else if (r < 0.68) { o = { type: 'spires2', w: 50, h: 40 + Math.random() * 28 }; }
           else if (r < 0.88) { o = { type: 'spires3', w: 78, h: 38 + Math.random() * 26 }; }
-          else { o = { type: 'dove', w: 40, h: 24 }; }
-          if (o.type === 'dove') {
+          else { o = { type: 'moon', w: 40, h: 24 }; }
+          if (o.type === 'moon') {
             o.y = groundY - o.h - 46 - Math.random() * 14;
           } else {
             o.y = groundY - o.h;
