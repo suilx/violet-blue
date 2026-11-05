@@ -1829,8 +1829,10 @@
       window.addEventListener('wheel', function (e) {
         var openOverlay = document.querySelector('.drawer.open, .sidebar.open, .guestbook-stage.open, .video-stage.open');
         if (openOverlay) {
-          if (e.target && e.target.closest && !e.target.closest('.drawer-content, .sidebar-body, .guestbook-panel')) {
-            e.preventDefault();
+          e.preventDefault();
+          var scroller = e.target && e.target.closest ? e.target.closest('.drawer, .guestbook-panel, .sidebar-body, .side-nav') : null;
+          if (scroller && scroller.scrollHeight > scroller.clientHeight) {
+            scroller.scrollTop += e.deltaY;
           }
           return;
         }
