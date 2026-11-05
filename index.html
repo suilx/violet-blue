@@ -1831,20 +1831,24 @@
           }
           return;
         }
+        if (scrollTarget < vh) {
+          if (delta > 0) {
+            scrollTarget = vh;
+            scrollCurrent = vh;
+            window.scrollTo(0, vh);
+            scrollSnapLocked = true;
+            scrollSnapAccum = 0;
+            scrollSnapLockUntil = Date.now() + 250;
+          }
+          return;
+        }
         var next = scrollTarget + delta;
-        if (delta > 0 && scrollTarget < vh && next >= vh) {
-          scrollTarget = vh;
-          scrollCurrent = vh;
-          window.scrollTo(0, vh);
-          scrollSnapLocked = true;
-          scrollSnapAccum = 0;
-          scrollSnapLockUntil = Date.now() + 250;
-        } else if (next < vh) {
+        if (next <= vh && delta < 0) {
           scrollTarget = 0;
           scrollCurrent = 0;
           window.scrollTo(0, 0);
         } else {
-          scrollTarget = Math.min(maxScroll(), next);
+          scrollTarget = Math.max(vh, Math.min(maxScroll(), next));
           startLerp();
         }
       }, { passive: false });
