@@ -1833,6 +1833,7 @@
       window.addEventListener('wheel', function (e) {
         if (e.ctrlKey || e.metaKey) return;
         e.preventDefault();
+        if (easeRunning) return;
         var vh = window.innerHeight || 1;
         var delta = e.deltaY;
         if (scrollTarget < vh) {
