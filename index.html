@@ -112,7 +112,7 @@
     font-size: clamp(14px, 1.75vw, 23px);
     line-height: 1.75;
     letter-spacing: 0.02em;
-    color: rgba(var(--ink),0.028);
+    color: rgba(var(--ink),0.06);
     margin-right: 0.7em;
   }
   .wall .word .ch { transition: color .12s ease; }
@@ -1148,7 +1148,13 @@
       var html = '';
       for (var i = 0; i < 1600; i++) {
         var e = entries[i % entries.length];
-        html += '<span class="word">' + e.word.split('').map(function (c, idx) {
+        var r = Math.random();
+        var size;
+        if (r < 0.08) size = 30;
+        else if (r < 0.16) size = 13;
+        else if (r < 0.30) size = 22;
+        else size = 17;
+        html += '<span class="word" style="font-size:' + size + 'px">' + e.word.split('').map(function (c, idx) {
           if (idx === 0 && e.isStart) return '<span class="ch first">' + c.toUpperCase() + '</span>';
           return '<span class="ch">' + c + '</span>';
         }).join('') + '</span>';
