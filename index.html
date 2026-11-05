@@ -1798,10 +1798,23 @@
         window.scrollTo(0, scrollCurrent);
         if (scrollAnimating) requestAnimationFrame(scrollStep);
       }
+      var scrollSnapLocked = false;
       window.addEventListener('wheel', function (e) {
         if (e.ctrlKey || e.metaKey) return;
         e.preventDefault();
-        scrollTarget = Math.max(0, Math.min(maxScroll(), scrollTarget + e.deltaY));
+        var vh = window.innerHeight || 1;
+        var next = scrollTarget + e.deltaY;
+        if (scrollSnapLocked) {
+          if (Math.abs(e.deltaY) > 40) {
+            scrollSnapLocked = false;
+            scrollTarget = Math.max(0, Math.min(maxScroll(), next));
+          }
+        } else if (e.deltaY > 0 && scrollTarget < vh && next > vh) {
+          scrollTarget = vh;
+          scrollSnapLocked = true;
+        } else {
+          scrollTarget = Math.max(0, Math.min(maxScroll(), next));
+        }
         if (!scrollAnimating) {
           scrollAnimating = true;
           scrollCurrent = window.scrollY || 0;
