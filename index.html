@@ -1799,19 +1799,29 @@
         if (scrollAnimating) requestAnimationFrame(scrollStep);
       }
       var scrollSnapLocked = false;
+      var scrollSnapAccum = 0;
       window.addEventListener('wheel', function (e) {
         if (e.ctrlKey || e.metaKey) return;
         e.preventDefault();
         var vh = window.innerHeight || 1;
         var next = scrollTarget + e.deltaY;
         if (scrollSnapLocked) {
-          if (Math.abs(e.deltaY) > 40) {
+          if (e.deltaY < 0) {
             scrollSnapLocked = false;
+            scrollSnapAccum = 0;
             scrollTarget = Math.max(0, Math.min(maxScroll(), next));
+          } else {
+            scrollSnapAccum += e.deltaY;
+            if (scrollSnapAccum > 150) {
+              scrollSnapLocked = false;
+              scrollSnapAccum = 0;
+              scrollTarget = Math.max(0, Math.min(maxScroll(), next));
+            }
           }
         } else if (e.deltaY > 0 && scrollTarget < vh && next > vh) {
           scrollTarget = vh;
           scrollSnapLocked = true;
+          scrollSnapAccum = 0;
         } else {
           scrollTarget = Math.max(0, Math.min(maxScroll(), next));
         }
