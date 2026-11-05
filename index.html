@@ -1800,6 +1800,7 @@
       }
       var scrollSnapLocked = false;
       var scrollSnapAccum = 0;
+      var scrollSnapLockUntil = 0;
       function startLerp() {
         scrollCurrent = window.scrollY || 0;
         if (!scrollAnimating) {
@@ -1819,9 +1820,9 @@
             scrollTarget = 0;
             scrollCurrent = 0;
             window.scrollTo(0, 0);
-          } else {
+          } else if (Date.now() >= scrollSnapLockUntil) {
             scrollSnapAccum += delta;
-            if (scrollSnapAccum > 150) {
+            if (scrollSnapAccum > 400) {
               scrollSnapLocked = false;
               var extra = scrollSnapAccum;
               scrollSnapAccum = 0;
@@ -1838,6 +1839,7 @@
           window.scrollTo(0, vh);
           scrollSnapLocked = true;
           scrollSnapAccum = 0;
+          scrollSnapLockUntil = Date.now() + 250;
         } else if (next < vh) {
           scrollTarget = 0;
           scrollCurrent = 0;
