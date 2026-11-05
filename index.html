@@ -917,6 +917,37 @@
     .drawer { width: 88vw; }
     .drawer-content { padding: 40px 28px; }
   }
+  .game {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    min-height: 100vh;
+    z-index: 3;
+    transform: translateY(100vh);
+    will-change: transform;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.4em;
+    padding: 8vh 6vw;
+    background: var(--bg);
+  }
+  .game-head { display: flex; align-items: baseline; gap: 2em; }
+  .game-title { font-family: var(--graffiti); font-size: clamp(26px, 4vw, 44px); font-weight: 400; color: rgba(var(--ink),0.9); letter-spacing: 0.04em; margin: 0; }
+  .game-score { font-family: var(--sans); font-size: 13px; letter-spacing: 0.22em; color: rgba(var(--ink),0.6); }
+  .game-wrap { position: relative; width: min(800px, 92vw); }
+  .game-canvas { width: 100%; height: auto; display: block; border: 1px solid rgba(var(--ink),0.15); background: rgba(var(--ink),0.03); }
+  .game-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .game-msg { font-family: var(--graffiti); font-size: clamp(18px, 2.5vw, 28px); color: rgba(var(--ink),0.85); text-align: center; padding: 0 1em; }
+  .game-hint { font-family: var(--sans); font-size: 12px; letter-spacing: 0.15em; color: rgba(var(--ink),0.45); }
+  .game-board { width: min(800px, 92vw); }
+  .board-title { font-family: var(--sans); font-size: 12px; letter-spacing: 0.3em; color: rgba(var(--ink),0.5); margin-bottom: 0.8em; }
+  .board-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.4em; }
+  .board-list li { font-family: var(--sans); font-size: 14px; color: rgba(var(--ink),0.75); display: flex; justify-content: space-between; gap: 2em; }
+  .board-list li b { font-weight: 400; color: rgba(var(--ink),0.9); }
+
 </style>
 </head>
 <body>
@@ -973,6 +1004,24 @@
     </div>
     <button class="drawer-trigger" id="drawerTrigger">READ MORE</button>
     <div class="signature">suilx</div>
+  </section>
+
+  <section class="game" id="game">
+    <div class="game-head">
+      <h2 class="game-title">CROSS RUNNER</h2>
+      <div class="game-score">SCORE <span id="gameScore">0</span></div>
+    </div>
+    <div class="game-wrap">
+      <canvas id="gameCanvas" width="800" height="400"></canvas>
+      <div class="game-overlay" id="gameOverlay">
+        <span class="game-msg" id="gameMsg">按 空格 / 点击 跳跃</span>
+      </div>
+    </div>
+    <div class="game-hint">SPACE / CLICK 跳跃 · 躲避教堂尖顶</div>
+    <div class="game-board" id="gameBoard">
+      <div class="board-title">TOP SCORES</div>
+      <ol class="board-list" id="boardList"></ol>
+    </div>
   </section>
 
   <div class="drawer-overlay" id="drawerOverlay"></div>
@@ -1804,6 +1853,7 @@
       // ===== 抽屉式下滑：rAF 驱动，GPU 合成层 =====
       var stage = document.getElementById('stage');
       var scripture = document.getElementById('scripture');
+      var game = document.getElementById('game');
       var ticking = false;
       var BOTTOM_PAD = 0.30; // 底部额外留白（相对视口高度），保证能滑到 READ MORE 下方
 
@@ -1811,7 +1861,7 @@
         var vh = window.innerHeight || 1;
         var sh = scripture.scrollHeight || vh; // 内容实际高度（含 padding）
         // 可滚动范围 = 一屏（stage 淡出）+ 整个 scripture 面板 + 底部留白
-        document.body.style.height = (vh + sh + vh * BOTTOM_PAD) + 'px';
+        document.body.style.height = (vh + sh + vh + vh * BOTTOM_PAD) + 'px';
       }
 
       function update() {
@@ -1821,7 +1871,9 @@
         stage.style.opacity = Math.max(0, 1 - sp / 0.6).toFixed(3);
         stage.style.transform = 'translateY(' + (sp * 50).toFixed(2) + '%)';
         // scripture：从视口下方滑入（+vh），随后继续上移（负值）露出底部内容
+        var sh = scripture.scrollHeight || vh;
         scripture.style.transform = 'translateY(' + (vh - y).toFixed(2) + 'px)';
+        game.style.transform = 'translateY(' + (vh + sh - y).toFixed(2) + 'px)';
         if (y > vh * 0.45) { scripture.classList.add('visible'); }
         else { scripture.classList.remove('visible'); }
         var fade = Math.max(0, Math.min(1, (sp - 0.2) / 0.5));
@@ -1899,18 +1951,33 @@
         e.preventDefault();
         if (easeRunning) return;
         var vh = window.innerHeight || 1;
+        var sh = scripture.scrollHeight || vh;
+        var p2 = vh;
+        var p3 = vh + sh;
         var delta = e.deltaY;
-        if (scrollTarget < vh) {
+        if (scrollTarget < p2) {
           if (delta > 0) {
-            startEase(vh);
+            startEase(p2);
+          }
+          return;
+        }
+        if (scrollTarget >= p3) {
+          var next3 = scrollTarget + delta;
+          if (delta < 0 && next3 < p3) {
+            startEase(p2);
+          } else {
+            scrollTarget = Math.max(p3, Math.min(maxScroll(), next3));
+            startLerp();
           }
           return;
         }
         var next = scrollTarget + delta;
-        if (delta < 0 && next < vh) {
+        if (delta < 0 && next < p2) {
           startEase(0);
+        } else if (delta > 0 && next >= p3) {
+          startEase(p3);
         } else {
-          scrollTarget = Math.max(vh, Math.min(maxScroll(), next));
+          scrollTarget = Math.max(p2, Math.min(p3, next));
           startLerp();
         }
       }, { passive: false });
@@ -2188,6 +2255,115 @@
         }, 2600);
         sidebar.classList.remove('open');
       }
+      // ===== 跑酷游戏：十字架主角躲避教堂尖顶 =====
+      (function () {
+        var canvas = document.getElementById('gameCanvas');
+        var ctx = canvas.getContext('2d');
+        var scoreEl = document.getElementById('gameScore');
+        var overlay = document.getElementById('gameOverlay');
+        var msgEl = document.getElementById('gameMsg');
+        var boardList = document.getElementById('boardList');
+        var W = 800, H = 400, groundY = H - 60;
+        var player = { x: 90, w: 34, h: 44, y: 0, vy: 0, jumping: false };
+        player.y = groundY - player.h;
+        var gravity = 0.72, jumpV = -14, obstacles = [], score = 0, speed = 6, state = 'ready', frame = 0;
+        function ink() {
+          var v = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
+          return v ? 'rgb(' + v + ')' : 'rgb(255,255,255)';
+        }
+        function drawCross(x, y, w, h, c) {
+          var bw = w * 0.30, bh = h * 0.34;
+          ctx.fillStyle = c;
+          ctx.fillRect(x + (w - bw) / 2, y, bw, h);
+          ctx.fillRect(x, y + h * 0.24, w, bw);
+        }
+        function drawSpire(x, y, w, h, c) {
+          ctx.fillStyle = c;
+          ctx.beginPath();
+          ctx.moveTo(x + w / 2, y);
+          ctx.lineTo(x + w, y + h * 0.62);
+          ctx.lineTo(x, y + h * 0.62);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillRect(x, y + h * 0.62, w, h * 0.38);
+        }
+        function reset() {
+          player.y = groundY - player.h; player.vy = 0; player.jumping = false;
+          obstacles = []; score = 0; speed = 6; frame = 0; scoreEl.textContent = '0';
+        }
+        function collide(p, o) {
+          return p.x < o.x + o.w && p.x + p.w > o.x && p.y < o.y + o.h && p.y + p.h > o.y;
+        }
+        function saveScore(s) {
+          var arr = JSON.parse(localStorage.getItem('crossRunnerScores') || '[]');
+          arr.push({ s: s, t: Date.now() });
+          arr.sort(function (a, b) { return b.s - a.s; });
+          arr = arr.slice(0, 8);
+          localStorage.setItem('crossRunnerScores', JSON.stringify(arr));
+        }
+        function renderBoard() {
+          var arr = JSON.parse(localStorage.getItem('crossRunnerScores') || '[]');
+          boardList.innerHTML = '';
+          for (var i = 0; i < arr.length; i++) {
+            var d = new Date(arr[i].t);
+            var li = document.createElement('li');
+            li.innerHTML = '<span>' + (i + 1) + '. ' + (d.getMonth() + 1) + '/' + d.getDate() + '</span><b>' + arr[i].s + '</b>';
+            boardList.appendChild(li);
+          }
+        }
+        function gameOver() {
+          state = 'over';
+          saveScore(Math.floor(score));
+          renderBoard();
+          msgEl.textContent = '游戏结束 · 得分 ' + Math.floor(score) + ' · 点击重开';
+          overlay.style.display = 'flex';
+        }
+        function jump() {
+          if (state === 'over') { state = 'playing'; overlay.style.display = 'none'; reset(); return; }
+          if (state === 'ready') { state = 'playing'; overlay.style.display = 'none'; }
+          if (state === 'playing' && !player.jumping) { player.vy = jumpV; player.jumping = true; }
+        }
+        function update() {
+          if (player.jumping || player.y < groundY - player.h) {
+            player.vy += gravity; player.y += player.vy;
+            if (player.y >= groundY - player.h) { player.y = groundY - player.h; player.vy = 0; player.jumping = false; }
+          }
+          for (var i = obstacles.length - 1; i >= 0; i--) {
+            var o = obstacles[i]; o.x -= speed;
+            if (o.x + o.w < 0) { obstacles.splice(i, 1); continue; }
+            if (collide(player, o)) { gameOver(); return; }
+          }
+          score += speed * 0.1; scoreEl.textContent = Math.floor(score);
+          speed += 0.004;
+          if (frame % Math.max(28, Math.floor(60 - speed * 3)) === 0) {
+            var oh = 34 + Math.random() * 36;
+            obstacles.push({ x: W + 20, y: groundY - oh, w: 26, h: oh });
+          }
+        }
+        function draw() {
+          var c = ink();
+          ctx.clearRect(0, 0, W, H);
+          ctx.strokeStyle = c; ctx.globalAlpha = 0.28; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(W, groundY); ctx.stroke();
+          ctx.globalAlpha = 1;
+          drawCross(player.x, player.y, player.w, player.h, c);
+          for (var i = 0; i < obstacles.length; i++) {
+            drawSpire(obstacles[i].x, obstacles[i].y, obstacles[i].w, obstacles[i].h, c);
+          }
+        }
+        function loop() {
+          if (state === 'playing') { frame++; update(); }
+          draw();
+          requestAnimationFrame(loop);
+        }
+        overlay.addEventListener('click', jump);
+        canvas.addEventListener('click', jump);
+        document.addEventListener('keydown', function (e) {
+          if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); jump(); }
+        });
+        reset(); renderBoard(); msgEl.textContent = '按 空格 / 点击 跳跃';
+        loop();
+      })();
     })();
   </script>
 
