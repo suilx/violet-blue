@@ -1800,35 +1800,51 @@
       }
       var scrollSnapLocked = false;
       var scrollSnapAccum = 0;
+      function startLerp() {
+        scrollCurrent = window.scrollY || 0;
+        if (!scrollAnimating) {
+          scrollAnimating = true;
+          requestAnimationFrame(scrollStep);
+        }
+      }
       window.addEventListener('wheel', function (e) {
         if (e.ctrlKey || e.metaKey) return;
         e.preventDefault();
         var vh = window.innerHeight || 1;
-        var next = scrollTarget + e.deltaY;
+        var delta = e.deltaY;
         if (scrollSnapLocked) {
-          if (e.deltaY < 0) {
+          if (delta < 0) {
             scrollSnapLocked = false;
             scrollSnapAccum = 0;
-            scrollTarget = Math.max(0, Math.min(maxScroll(), next));
+            scrollTarget = 0;
+            scrollCurrent = 0;
+            window.scrollTo(0, 0);
           } else {
-            scrollSnapAccum += e.deltaY;
+            scrollSnapAccum += delta;
             if (scrollSnapAccum > 150) {
               scrollSnapLocked = false;
+              var extra = scrollSnapAccum;
               scrollSnapAccum = 0;
-              scrollTarget = Math.max(0, Math.min(maxScroll(), next));
+              scrollTarget = Math.min(maxScroll(), vh + extra);
+              startLerp();
             }
           }
-        } else if (e.deltaY > 0 && scrollTarget < vh && next > vh) {
+          return;
+        }
+        var next = scrollTarget + delta;
+        if (delta > 0 && scrollTarget < vh && next >= vh) {
           scrollTarget = vh;
+          scrollCurrent = vh;
+          window.scrollTo(0, vh);
           scrollSnapLocked = true;
           scrollSnapAccum = 0;
+        } else if (next < vh) {
+          scrollTarget = 0;
+          scrollCurrent = 0;
+          window.scrollTo(0, 0);
         } else {
-          scrollTarget = Math.max(0, Math.min(maxScroll(), next));
-        }
-        if (!scrollAnimating) {
-          scrollAnimating = true;
-          scrollCurrent = window.scrollY || 0;
-          requestAnimationFrame(scrollStep);
+          scrollTarget = Math.min(maxScroll(), next);
+          startLerp();
         }
       }, { passive: false });
 
