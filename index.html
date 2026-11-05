@@ -917,7 +917,7 @@
     z-index: 3;
     transform: translateY(100vh);
     will-change: transform;
-    display: flex;
+    display: none; /* 跑酷游戏暂时隐藏；恢复时改回 flex */
     flex-direction: column;
     align-items: center;
     justify-content: center;
@@ -1848,8 +1848,8 @@
       function measure() {
         var vh = window.innerHeight || 1;
         var sh = scripture.scrollHeight || vh; // 内容实际高度（含 padding）
-        // 可滚动范围 = 一屏（stage 淡出）+ 整个 scripture 面板 + 底部留白
-        document.body.style.height = (vh + sh + vh + vh * BOTTOM_PAD) + 'px';
+        // 可滚动范围 = 一屏（stage 淡出）+ 整个 scripture 面板 + 底部留白（跑酷游戏第三页已隐藏，去掉 game 的一屏）
+        document.body.style.height = (vh + sh + vh * BOTTOM_PAD) + 'px';
       }
 
       function update() {
@@ -1941,7 +1941,6 @@
         var vh = window.innerHeight || 1;
         var sh = scripture.scrollHeight || vh;
         var p2 = vh;
-        var p3 = vh + sh;
         var delta = e.deltaY;
         if (scrollTarget < p2) {
           if (delta > 0) {
@@ -1949,23 +1948,12 @@
           }
           return;
         }
-        if (scrollTarget >= p3) {
-          var next3 = scrollTarget + delta;
-          if (delta < 0 && next3 < p3) {
-            startEase(p2);
-          } else {
-            scrollTarget = Math.max(p3, Math.min(maxScroll(), next3));
-            startLerp();
-          }
-          return;
-        }
+        // 第二页（scripture）是最后一页（跑酷游戏第三页已隐藏）
         var next = scrollTarget + delta;
         if (delta < 0 && next < p2) {
           startEase(0);
-        } else if (delta > 0 && next >= p3) {
-          startEase(p3);
         } else {
-          scrollTarget = Math.max(p2, Math.min(p3, next));
+          scrollTarget = Math.max(p2, Math.min(maxScroll(), next));
           startLerp();
         }
       }, { passive: false });
@@ -2245,6 +2233,8 @@
       }
       // ===== RUNNER GAME: cross dodges spires & moons =====
       (function () {
+        var gameSection = document.getElementById('game');
+        if (!gameSection || gameSection.offsetParent === null) return; // 游戏被 CSS 隐藏时跳过初始化，避免空转的 rAF 循环 + 键盘拦截
         var canvas = document.getElementById('gameCanvas');
         var ctx = canvas.getContext('2d');
         var scoreEl = document.getElementById('gameScore');
