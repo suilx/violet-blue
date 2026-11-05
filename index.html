@@ -968,7 +968,7 @@
   </aside>
 
   <div class="theme-wave" id="themeWave"></div>
-  <audio id="music" src="chara_violet_blue.mp3" preload="none"></audio>
+  <audio id="music" src="john-music/chara_violet_blue.mp3" preload="none"></audio>
   <!-- ============ 侧边栏 ============ -->
   <div class="sidebar" id="sidebar">
     <div class="sidebar-scrim" id="sidebarScrim"></div>
@@ -1727,6 +1727,7 @@
         clearSlots();
         applySongTheme(i);
         switchHalftone(i);
+        if (audio && tracks[i]) audio.src = tracks[i].file;
       }
 
       audio.addEventListener('timeupdate', function () {
