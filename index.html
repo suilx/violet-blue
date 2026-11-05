@@ -706,7 +706,7 @@
   }
   .link-title { font-size: 14px; color: rgba(var(--ink),0.7); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .link-open-new { color: rgba(var(--ink),0.9); text-decoration: underline; font-size: 13px; white-space: nowrap; }
-  .link-frame { flex: 1; width: 100%; border: none; background: #fff; }
+  .link-frame { flex: 1; width: 100%; border: none; background: #000; }
 
   .guestbook-close {
     position: absolute;
@@ -997,9 +997,9 @@
           <div class="side-group">
             <button class="side-item">Socials</button>
             <div class="side-sub">
-              <a class="side-sub-item" href="https://www.twitch.tv/suilx1" target="_blank" rel="noopener">Twitch</a>
+              <a class="side-sub-item" href="https://www.twitch.tv/suilx1" target="_blank" data-newtab rel="noopener">Twitch</a>
               <a class="side-sub-item" href="https://v.douyin.com/iX-KHJTjcxU/" target="_blank" rel="noopener">TikTok</a>
-              <a class="side-sub-item" href="https://steamcommunity.com/id/suilx/" target="_blank" rel="noopener">Steam</a>
+              <a class="side-sub-item" href="https://steamcommunity.com/id/suilx/" target="_blank" data-newtab rel="noopener">Steam</a>
             </div>
           </div>
           <div class="side-group">
@@ -1015,7 +1015,7 @@
               <div class="side-nested">
                 <button class="side-sub-item side-nested-toggle">Final Fantasy XIV</button>
                 <div class="side-nested-sub">
-                  <a class="side-sub-item side-leaf" href="https://na.finalfantasyxiv.com/lodestone/character/43209747/" target="_blank" rel="noopener">Profile</a>
+                  <a class="side-sub-item side-leaf" href="https://na.finalfantasyxiv.com/lodestone/character/43209747/" target="_blank" data-newtab rel="noopener">Profile</a>
                 </div>
               </div>
               <div class="side-nested">
@@ -2114,7 +2114,7 @@
       });
       document.addEventListener('click', function (e) {
         var a = e.target && e.target.closest ? e.target.closest('.sidebar-body a[target="_blank"]') : null;
-        if (a) {
+        if (a && !a.hasAttribute('data-newtab')) {
           e.preventDefault();
           openLink(a.href, a.textContent.trim());
         }
