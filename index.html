@@ -2037,18 +2037,12 @@
           // 阶段 A：十字架居中，极短停顿
           crossScale = 1;
           stripX = 0;
-        } else if (zp < 0.22) {
-          // 阶段 B：十字架放缓展开到撑满屏幕
-          var bT = (zp - 0.015) / 0.205;
-          var bE = 1 - Math.pow(1 - bT, 4);
-          crossScale = 1 + bE * (CROSS_MAX - 1);
-          stripX = 0;
         } else if (zp < 0.90) {
-          // 阶段 C：卷轴横移（前段留白 padding + 视频 + 点阵画），无停顿连续滑动
-          crossScale = CROSS_MAX;
-          var cT = (zp - 0.22) / 0.68;
-          var cE = cT;
-          stripX = -(cE * maxStripX);
+          // 阶段 B+C：十字架展开与卷轴横移同时进行（一滑动卷轴就动）
+          var t = (zp - 0.015) / 0.885;
+          var e = 1 - Math.pow(1 - t, 3);
+          crossScale = 1 + e * (CROSS_MAX - 1);
+          stripX = -(e * maxStripX);
         } else {
           // 阶段 D：遮罩回收，卷轴停在末尾
           var dT = (zp - 0.90) / 0.10;
@@ -2060,13 +2054,7 @@
         if (crossFrame) { crossFrame.setAttribute('transform', 'translate(50 50) scale(' + crossScale.toFixed(3) + ') translate(-50 -50)'); }
         if (crossHint) { crossHint.style.opacity = (zp > 0.03 && zp < 0.72) ? '1' : '0'; }
         if (videoStrip) { videoStrip.style.transform = 'translateX(' + stripX.toFixed(2) + 'px)'; }
-        if (verseBack) {
-          var backLines = verseBack.querySelectorAll('.vline');
-          for (var bi = 0; bi < backLines.length; bi++) {
-            var bd = parseFloat(backLines[bi].getAttribute('data-depth')) || 0.7;
-            backLines[bi].style.transform = 'translateX(' + (stripX * bd).toFixed(2) + 'px)';
-          }
-        }
+        if (verseBack) { verseBack.style.transform = 'translateX(' + (stripX * 0.7).toFixed(2) + 'px)'; }
         if (verseFront) { verseFront.style.transform = 'translateX(' + (stripX * 1.45).toFixed(2) + 'px)'; }
         if (y > vh * 0.45) { scripture.classList.add('visible'); }
         else { scripture.classList.remove('visible'); }
@@ -2204,7 +2192,7 @@
           { t: "And now these three remain: faith, hope and love. But the greatest of these is love.", s: "big" }
         ];
         var vHtml = '';
-        for (var vi = 0; vi < 260; vi++) {
+        for (var vi = 0; vi < 600; vi++) {
           var ln = vLines[vi % vLines.length];
           var depth = (0.5 + (vi % 5) * 0.12).toFixed(2);
           var vchars = ln.t.split('').map(function (c) { return '<span class="ch">' + c + '</span>'; }).join('');
@@ -2246,7 +2234,7 @@
         }, 2600);
       }
       if (verseFront) {
-        verseFront.innerHTML = '<span class="vline bigword">INTHEBEGINNING</span><span class="vline bigword">GODCREATED</span><span class="vline bigword">LETTHEREBELIGHT</span><span class="vline bigword">ANDTHEREWASLIGHT</span>';
+        verseFront.innerHTML = '<span class="vline bigword">INTHEBEGINNING</span><span class="vline bigword">GODCREATED</span><span class="vline bigword">THEHEAVEN</span><span class="vline bigword">ANDTHEEARTH</span><span class="vline bigword">GODSAID</span><span class="vline bigword">LETTHEREBELIGHT</span><span class="vline bigword">ANDTHEREWASLIGHT</span><span class="vline bigword">ANDGODSAWITWASGOOD</span>';
       }
       measure();
       update();
