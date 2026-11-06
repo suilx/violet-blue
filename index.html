@@ -1020,9 +1020,10 @@
     font-style: normal;
     font-weight: 500;
     color: rgba(0,0,0,0.28);
-    align-content: space-between;
-    gap: 0.35em 1em;
+    align-content: flex-start; /* 从顶部自然排列，形成多行 */
+    gap: 0.4em 1.2em;
   }
+  .verse-back .vline { flex-shrink: 0; } /* 不压缩，避免经文重叠 */
   .verse-front {
     z-index: 2; /* 巨大单词：介于上下视频卡之间，遮上被下盖 */
     align-content: center;
@@ -2035,20 +2036,16 @@
           // 阶段 A：十字架居中，极短停顿
           crossScale = 1;
           stripX = 0;
-        } else if (zp < 0.18) {
+        } else if (zp < 0.22) {
           // 阶段 B：十字架放缓展开到撑满屏幕
-          var bT = (zp - 0.015) / 0.165;
+          var bT = (zp - 0.015) / 0.205;
           var bE = 1 - Math.pow(1 - bT, 4);
           crossScale = 1 + bE * (CROSS_MAX - 1);
           stripX = 0;
-        } else if (zp < 0.35) {
-          // 阶段 B2：十字架撑满后停顿（画面定格，明显停顿）
-          crossScale = CROSS_MAX;
-          stripX = 0;
         } else if (zp < 0.90) {
-          // 阶段 C：卷轴横移（前段留白 padding + 视频 + 点阵画）
+          // 阶段 C：卷轴横移（前段留白 padding + 视频 + 点阵画），无停顿连续滑动
           crossScale = CROSS_MAX;
-          var cT = (zp - 0.35) / 0.55;
+          var cT = (zp - 0.22) / 0.68;
           var cE = cT;
           stripX = -(cE * maxStripX);
         } else {
@@ -2206,7 +2203,7 @@
           { t: "And now these three remain: faith, hope and love. But the greatest of these is love.", s: "big" }
         ];
         var vHtml = '';
-        for (var vi = 0; vi < 90; vi++) {
+        for (var vi = 0; vi < 150; vi++) {
           var ln = vLines[vi % vLines.length];
           var depth = (0.5 + (vi % 5) * 0.12).toFixed(2);
           var vchars = ln.t.split('').map(function (c) { return '<span class="ch">' + c + '</span>'; }).join('');
@@ -2248,7 +2245,7 @@
         }, 2600);
       }
       if (verseFront) {
-        verseFront.innerHTML = '<span class="vline bigword">IN THE BEGINNING GOD CREATED THE HEAVEN AND THE EARTH AND GOD SAID LET THERE BE LIGHT AND THERE WAS LIGHT</span>';
+        verseFront.innerHTML = '<span class="vline bigword">INTHEBEGINNINGGODCREATEDTHEHEAVENANDTHEEARTHANDGODSAIDLETTHEREBELIGHTANDTHEREWASLIGHT</span>';
       }
       measure();
       update();
