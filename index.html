@@ -2065,9 +2065,12 @@
         if (crossFrame) { crossFrame.setAttribute('transform', 'translate(50 50) scale(' + crossScale.toFixed(3) + ') translate(-50 -50)'); }
         if (crossHint) { crossHint.style.opacity = (zp > 0.03 && zp < 0.72) ? '1' : '0'; }
         if (videoStrip) {
-          videoStrip.style.transform = 'translateX(' + stripX.toFixed(2) + 'px)';
+          var prog = maxStripX > 0 ? (-stripX / maxStripX) : 0; // 0~1
+          var rotY = (prog - 0.5) * 60; // 卷轴整体鱼眼旋转
+          videoStrip.style.transformOrigin = (-stripX + window.innerWidth / 2) + 'px 50%'; // 旋转中心随视口居中
+          videoStrip.style.transform = 'translateX(' + stripX.toFixed(2) + 'px) rotateY(' + rotY.toFixed(2) + 'deg)';
           var cards = videoStrip.querySelectorAll('.v-card');
-          var scalePattern = [1.0, 1.15, 0.85, 1.3, 0.9, 1.2, 0.8, 1.4, 0.95, 1.1, 0.85, 1.25, 0.9, 1.15];
+          var scalePattern = [1.0, 4.0, 2.0, 0.8, 1.0, 1.5, 4.0, 2.0, 0.8, 1.5, 6.0, 0.8, 1.0, 1.5];
           for (var ci = 0; ci < cards.length; ci++) {
             var ty = (ci % 2 === 0) ? -20 : 20;
             var s = scalePattern[ci] || 1;
