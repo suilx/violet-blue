@@ -2050,7 +2050,8 @@
           var t2 = (zp - 0.40) / 0.50;
           var segs = 7; // 7 屏（每屏 2 张视频）
           // 正弦波阻尼：每屏一个减速带，单调不减、段边界不停顿
-          var total = t2 - Math.sin(t2 * segs * 2 * Math.PI) * (0.035 / segs);
+          var amp = 0.018 + 0.045 * t2; // 前段轻、后段重，整体阻尼抬升
+          var total = t2 - Math.sin(t2 * segs * 2 * Math.PI) * (amp / segs);
           var gap2 = 224 * window.innerWidth / 100;
           stripX = -(gap2 + total * (maxStripX - gap2));
         } else {
