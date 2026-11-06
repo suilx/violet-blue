@@ -2045,10 +2045,11 @@
           var gap = 224 * window.innerWidth / 100;
           stripX = -(t * gap); // 卷轴线性横移，末端不停顿
         } else if (zp < 0.90) {
-          // 阶段 C：卷轴横移，整体 ease-out（无减速带停顿）
+          // 阶段 C：卷轴横移，每屏轻微阻滞（正弦波，前后均匀，不停顿）
           crossScale = CROSS_MAX;
           var t2 = (zp - 0.40) / 0.50;
-          var total = 1 - Math.pow(1 - t2, 3);
+          var segs = 7; // 7 屏（每屏 2 张视频）
+          var total = t2 - Math.sin(t2 * segs * 2 * Math.PI) * (0.02 / segs);
           var gap2 = 224 * window.innerWidth / 100;
           stripX = -(gap2 + total * (maxStripX - gap2));
         } else {
