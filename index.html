@@ -952,8 +952,8 @@
     gap: 1.1em;
   }
   /* 上下错落分很开：奇数靠上、偶数靠下（参考图：上下角落分布） */
-  .v-card:nth-child(odd) { transform: translateY(-20vh); }
-  .v-card:nth-child(even) { transform: translateY(20vh); }
+  .v-card:nth-child(odd) { transform: translateY(-20vh); z-index: 1; }
+  .v-card:nth-child(even) { transform: translateY(20vh); z-index: 3; }
   .v-thumb {
     position: relative;
     width: clamp(130px, 19vw, 290px);
@@ -1006,8 +1006,8 @@
     gap: 0.5em 1.2em;
   }
   .verse-front {
-    z-index: 3; /* 前景艺术字：视频卡(z2)之上，横移快，形成 3D 视差 */
-    font-size: clamp(24px, 3.4vw, 48px);
+    z-index: 2; /* 前景艺术字：介于上下视频卡之间，形成穿插纵深 */
+    font-size: clamp(34px, 5vw, 76px);
     font-style: italic;
     font-weight: 400;
     color: rgba(0,0,0,0.16);
@@ -2029,7 +2029,13 @@
         if (crossFrame) { crossFrame.setAttribute('transform', 'translate(50 50) scale(' + crossScale.toFixed(3) + ') translate(-50 -50)'); }
         if (crossHint) { crossHint.style.opacity = (zp > 0.03 && zp < 0.72) ? '1' : '0'; }
         if (videoStrip) { videoStrip.style.transform = 'translateX(' + stripX.toFixed(2) + 'px)'; }
-        if (verseBack) { verseBack.style.transform = 'translateX(' + (stripX * 0.7).toFixed(2) + 'px)'; }
+        if (verseBack) {
+          var backLines = verseBack.querySelectorAll('.vline');
+          for (var bi = 0; bi < backLines.length; bi++) {
+            var bd = parseFloat(backLines[bi].getAttribute('data-depth')) || 0.7;
+            backLines[bi].style.transform = 'translateX(' + (stripX * bd).toFixed(2) + 'px)';
+          }
+        }
         if (verseFront) { verseFront.style.transform = 'translateX(' + (stripX * 1.45).toFixed(2) + 'px)'; }
         if (y > vh * 0.45) { scripture.classList.add('visible'); }
         else { scripture.classList.remove('visible'); }
@@ -2169,7 +2175,8 @@
         var vHtml = '';
         for (var vi = 0; vi < 64; vi++) {
           var ln = vLines[vi % vLines.length];
-          vHtml += '<span class="vline' + (ln.s ? ' ' + ln.s : '') + '">' + ln.t + '</span>';
+          var depth = (0.5 + (vi % 5) * 0.12).toFixed(2);
+          vHtml += '<span class="vline' + (ln.s ? ' ' + ln.s : '') + '" data-depth="' + depth + '">' + ln.t + '</span>';
         }
         verseBack.innerHTML = vHtml;
       }
