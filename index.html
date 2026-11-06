@@ -2037,13 +2037,20 @@
           // 阶段 A：十字架居中，极短停顿
           crossScale = 1;
           stripX = 0;
-        } else if (zp < 0.90) {
-          // 阶段 B+C：十字架展开与卷轴横移同时进行（一滑动卷轴就动）
-          var t = (zp - 0.015) / 0.885;
+        } else if (zp < 0.40) {
+          // 阶段 B：十字架展开，卷轴横移到留白尽头（224vw，01 视频刚出现）
+          var t = (zp - 0.015) / 0.385;
           var e = 1 - Math.pow(1 - t, 3);
           crossScale = 1 + e * (CROSS_MAX - 1);
-          var de = 1 - Math.pow(1 - t, 5); // 卷轴阻尼：ease-out quint，末端减速更柔
-          stripX = -(de * maxStripX);
+          var gap = 224 * window.innerWidth / 100;
+          stripX = -(e * gap);
+        } else if (zp < 0.90) {
+          // 阶段 C：卷轴横移（留白之后，01 视频划过），带阻尼
+          crossScale = CROSS_MAX;
+          var t2 = (zp - 0.40) / 0.50;
+          var e2 = 1 - Math.pow(1 - t2, 4);
+          var gap2 = 224 * window.innerWidth / 100;
+          stripX = -(gap2 + e2 * (maxStripX - gap2));
         } else {
           // 阶段 D：遮罩回收，卷轴停在末尾
           var dT = (zp - 0.90) / 0.10;
