@@ -1010,7 +1010,7 @@
     font-size: clamp(34px, 5vw, 76px);
     font-style: italic;
     font-weight: 400;
-    color: rgba(0,0,0,0.16);
+    color: rgba(0,0,0,0.12);
     align-content: center;
     justify-content: center;
     gap: 1.4em 3em;
@@ -2183,7 +2183,7 @@
       if (verseFront) {
         var vWords = ['LIGHT', 'WORD', 'TRUTH', 'LIFE', 'LOVE', 'FAITH', 'HOPE', 'PEACE', 'GRACE', 'GLORY', 'SPIRIT', 'AMEN'];
         var wHtml = '';
-        for (var wi = 0; wi < 20; wi++) { wHtml += '<span class="vline">' + vWords[wi % vWords.length] + '</span>'; }
+        for (var wi = 0; wi < 8; wi++) { wHtml += '<span class="vline">' + vWords[wi % vWords.length] + '</span>'; }
         verseFront.innerHTML = wHtml;
       }
       measure();
