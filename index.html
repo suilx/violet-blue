@@ -1025,22 +1025,23 @@
   }
   .verse-back .vline { flex-shrink: 0; } /* 不压缩，避免经文重叠 */
   .verse-front {
-    z-index: 2; /* 巨大单词：介于上下视频卡之间，遮上被下盖 */
+    z-index: 2; /* 大经文：介于上下视频卡之间，遮上被下盖，贯穿整个卷轴 */
     align-content: center;
-    justify-content: center;
+    justify-content: space-around; /* 水平分布，贯穿卷轴 */
     padding: 0 4vw;
+    width: 150%; /* 提前量，贯穿整个卷轴 */
   }
   .verse-front .bigword {
     font-family: 'Anton', 'Arial Black', sans-serif;
-    font-size: clamp(100px, 15vw, 220px);
+    font-size: clamp(70px, 9vw, 140px);
     font-weight: 400;
     font-style: normal;
     color: #000;
     letter-spacing: -0.02em;
     line-height: 1.05;
     text-align: center;
-    max-width: 150vw;
     transform: skewX(-9deg);
+    white-space: nowrap;
   }
   /* 十字架遮罩：顶层深色，中间十字形镂空露出米白空间 */
   .cross-cover {
@@ -2203,7 +2204,7 @@
           { t: "And now these three remain: faith, hope and love. But the greatest of these is love.", s: "big" }
         ];
         var vHtml = '';
-        for (var vi = 0; vi < 150; vi++) {
+        for (var vi = 0; vi < 260; vi++) {
           var ln = vLines[vi % vLines.length];
           var depth = (0.5 + (vi % 5) * 0.12).toFixed(2);
           var vchars = ln.t.split('').map(function (c) { return '<span class="ch">' + c + '</span>'; }).join('');
@@ -2245,7 +2246,7 @@
         }, 2600);
       }
       if (verseFront) {
-        verseFront.innerHTML = '<span class="vline bigword">INTHEBEGINNINGGODCREATEDTHEHEAVENANDTHEEARTHANDGODSAIDLETTHEREBELIGHTANDTHEREWASLIGHT</span>';
+        verseFront.innerHTML = '<span class="vline bigword">INTHEBEGINNING</span><span class="vline bigword">GODCREATED</span><span class="vline bigword">LETTHEREBELIGHT</span><span class="vline bigword">ANDTHEREWASLIGHT</span>';
       }
       measure();
       update();
