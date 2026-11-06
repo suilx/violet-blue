@@ -956,7 +956,7 @@
   .v-card:nth-child(even) { transform: translateY(20vh); }
   .v-thumb {
     position: relative;
-    width: clamp(180px, 28vw, 420px);
+    width: clamp(130px, 19vw, 290px);
     aspect-ratio: 16 / 9; /* 横屏视频 */
     background: linear-gradient(160deg, #eae3d4, #dcd3c0);
     border: 1px solid rgba(0,0,0,0.08);
@@ -1013,6 +1013,21 @@
     height: 100%;
     z-index: 20; /* 遮罩在最顶层，镂空才露出下方的视频/单词 */
     pointer-events: none;
+  }
+  .cross-hint {
+    position: absolute;
+    left: 50%;
+    bottom: 7vh;
+    transform: translateX(-50%);
+    z-index: 21;
+    font-family: var(--sans);
+    font-size: 12px;
+    letter-spacing: 0.34em;
+    text-indent: 0.34em;
+    color: rgba(0,0,0,0.55);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .8s ease;
   }
 
 </style>
@@ -1097,12 +1112,13 @@
       <defs>
         <mask id="crossHole" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
           <rect x="0" y="0" width="100" height="100" fill="#ffffff"/>
-          <path id="crossShape" d="M48.7 26.2 H51.3 V47.7 H59.2 V52.3 H51.3 V73.8 H48.7 V52.3 H40.8 V47.7 H48.7 Z" fill="#000000"/>
+          <path id="crossShape" d="M46 10 H54 V45 H70 V55 H54 V90 H46 V55 H30 V45 H46 Z" fill="#000000"/>
         </mask>
       </defs>
       <rect x="0" y="0" width="100" height="100" fill="#050505" mask="url(#crossHole)"/>
-      <path id="crossFrame" d="M48.7 26.2 H51.3 V47.7 H59.2 V52.3 H51.3 V73.8 H48.7 V52.3 H40.8 V47.7 H48.7 Z" fill="none" stroke="#8a7a5a" stroke-width="2.6" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+      <path id="crossFrame" d="M46 10 H54 V45 H70 V55 H54 V90 H46 V55 H30 V45 H46 Z" fill="none" stroke="#8a7a5a" stroke-width="2.6" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
     </svg>
+    <div class="cross-hint" id="crossHint">SCROLL &middot; VIDEOS INSIDE</div>
   </section>
 
   <div class="drawer-overlay" id="drawerOverlay"></div>
@@ -1939,9 +1955,10 @@
       var videoStrip = document.getElementById('videoStrip');
       var crossShape = document.getElementById('crossShape');
       var crossFrame = document.getElementById('crossFrame');
+      var crossHint = document.getElementById('crossHint');
       var ticking = false;
       var BOTTOM_PAD = 0.30; // 底部额外留白（相对视口高度），保证能滑到 READ MORE 下方
-      var ZONE_SCROLL = 6.5; // 第三页视频区的滚动距离（相对视口高度，加大让卷轴横移更慢）
+      var ZONE_SCROLL = 9.5; // 第三页视频区的滚动距离（相对视口高度，加大让卷轴横移更慢）
       var CROSS_MAX = 40;    // 十字形镂空放大到撑满屏幕（遮罩自然消失，不淡出）
 
       function measure() {
@@ -1961,8 +1978,11 @@
         var sh = scripture.scrollHeight || vh;
         scripture.style.transform = 'translateY(' + (vh - y).toFixed(2) + 'px)';
         // ===== 第三页：视频区（镂空十字架 + 米白空间） =====
-        var zoneStart = vh + sh;                              // 第三页起点（第二页底部）
-        var vzt = Math.max(0, Math.min(sh, (vh + sh - y) * 4)); // 整体 translateY：第二页末段更快滑入（对齐再加快）
+        var zoneStart = vh + sh;
+        var approach = Math.max(0, Math.min(1, (y - vh) / sh));
+        var vt = Math.max(0, Math.min(1, (approach - 0.4) / 0.6));
+        var ve = vt * vt * (3 - 2 * vt);
+        var vzt = sh * (1 - ve);
         videoZone.style.transform = 'translateY(' + vzt.toFixed(2) + 'px)';
         var zoneScroll = vh * ZONE_SCROLL;
         var zp = Math.max(0, Math.min(1, (y - zoneStart) / zoneScroll)); // 第三页内部进度 0~1
@@ -1994,6 +2014,7 @@
         }
         if (crossShape) { crossShape.setAttribute('transform', 'translate(50 50) scale(' + crossScale.toFixed(3) + ') translate(-50 -50)'); }
         if (crossFrame) { crossFrame.setAttribute('transform', 'translate(50 50) scale(' + crossScale.toFixed(3) + ') translate(-50 -50)'); }
+        if (crossHint) { crossHint.style.opacity = (zp > 0.03 && zp < 0.72) ? '1' : '0'; }
         if (videoStrip) { videoStrip.style.transform = 'translateX(' + stripX.toFixed(2) + 'px)'; }
         if (y > vh * 0.45) { scripture.classList.add('visible'); }
         else { scripture.classList.remove('visible'); }
