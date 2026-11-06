@@ -1154,13 +1154,20 @@
           </div>
     <svg class="cross-cover" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
       <defs>
+        <filter id="crossGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="1.8" result="blur"/>
+          <feMerge>
+            <feMergeNode in="blur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
         <mask id="crossHole" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
           <rect x="0" y="0" width="100" height="100" fill="#ffffff"/>
           <path id="crossShape" d="M48 4 H52 V42 H66 V50 H52 V96 H48 V50 H34 V42 H48 Z" fill="#000000"/>
         </mask>
       </defs>
       <rect x="0" y="0" width="100" height="100" fill="#050505" mask="url(#crossHole)"/>
-      <path id="crossFrame" d="M48 4 H52 V42 H66 V50 H52 V96 H48 V50 H34 V42 H48 Z" fill="none" stroke="#8a7a5a" stroke-width="2.4" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+      <path id="crossFrame" d="M48 4 H52 V42 H66 V50 H52 V96 H48 V50 H34 V42 H48 Z" fill="none" stroke="#8a7a5a" stroke-width="2.4" stroke-linejoin="round" vector-effect="non-scaling-stroke" filter="url(#crossGlow)"/>
     </svg>
     <div class="cross-hint" id="crossHint">SCROLL &middot; VIDEOS INSIDE</div>
   </section>
