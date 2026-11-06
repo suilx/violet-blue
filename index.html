@@ -1156,11 +1156,18 @@
       <defs>
         <mask id="crossHole" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
           <rect x="0" y="0" width="100" height="100" fill="#ffffff"/>
-          <path id="crossShape" d="M46 10 H54 V45 H70 V55 H54 V90 H46 V55 H30 V45 H46 Z" fill="#000000"/>
+          <path id="crossShape" d="M47 4 H53 V42 H66 V50 H53 V96 H47 V50 H34 V42 H47 Z" fill="#000000"/>
         </mask>
       </defs>
       <rect x="0" y="0" width="100" height="100" fill="#050505" mask="url(#crossHole)"/>
-      <path id="crossFrame" d="M46 10 H54 V45 H70 V55 H54 V90 H46 V55 H30 V45 H46 Z" fill="none" stroke="#8a7a5a" stroke-width="2.6" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+      <path id="crossFrame" d="M47 4 H53 V42 H66 V50 H53 V96 H47 V50 H34 V42 H47 Z" fill="none" stroke="#8a7a5a" stroke-width="2.4" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+      <g fill="#8a7a5a">
+        <circle cx="50" cy="4" r="1.5"/>
+        <circle cx="50" cy="96" r="1.5"/>
+        <circle cx="34" cy="46" r="1.5"/>
+        <circle cx="66" cy="46" r="1.5"/>
+        <circle cx="50" cy="46" r="2.1"/>
+      </g>
     </svg>
     <div class="cross-hint" id="crossHint">SCROLL &middot; VIDEOS INSIDE</div>
   </section>
@@ -2045,12 +2052,17 @@
           var gap = 224 * window.innerWidth / 100;
           stripX = -(e * gap);
         } else if (zp < 0.90) {
-          // 阶段 C：卷轴横移（留白之后，01 视频划过），带阻尼
+          // 阶段 C：卷轴横移，分段阻尼（每屏一张 smoothstep 阻滞，但不停顿）
           crossScale = CROSS_MAX;
           var t2 = (zp - 0.40) / 0.50;
-          var e2 = 1 - Math.pow(1 - t2, 4);
+          var segs = 7; // 7 屏（每屏 2 张视频）
+          var sp = t2 * segs;
+          var si = Math.floor(sp); if (si >= segs) si = segs - 1;
+          var st = sp - si;
+          var se = st * st * (3 - 2 * st); // smoothstep：每屏开头结尾减速
+          var total = (si + se) / segs;
           var gap2 = 224 * window.innerWidth / 100;
-          stripX = -(gap2 + e2 * (maxStripX - gap2));
+          stripX = -(gap2 + total * (maxStripX - gap2));
         } else {
           // 阶段 D：遮罩回收，卷轴停在末尾
           var dT = (zp - 0.90) / 0.10;
