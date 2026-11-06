@@ -1004,7 +1004,7 @@
     height: 100%;
     pointer-events: none;
     user-select: none;
-    font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+    font-family: 'Montserrat', Helvetica, Arial, sans-serif;
     line-height: 1.7;
     display: flex;
     flex-wrap: wrap;
@@ -1015,12 +1015,13 @@
   .verse-bg .vline { white-space: nowrap; }
   .verse-back {
     z-index: 1; /* 背景经文：视频卡(z2)之下，横移慢 */
-    font-size: 20px;
-    font-style: italic;
-    font-weight: 400;
-    color: rgba(0,0,0,0.24);
+    width: 150%; /* 提前量：经文覆盖范围比卷轴更宽，延伸到后面 */
+    font-size: 18px;
+    font-style: normal;
+    font-weight: 500;
+    color: rgba(0,0,0,0.28);
     align-content: space-between;
-    gap: 0.5em 1.2em;
+    gap: 0.35em 1em;
   }
   .verse-front {
     z-index: 2; /* 巨大单词：介于上下视频卡之间，遮上被下盖 */
@@ -1030,14 +1031,15 @@
   }
   .verse-front .bigword {
     font-family: 'Anton', 'Arial Black', sans-serif;
-    font-size: clamp(72px, 11vw, 160px);
+    font-size: clamp(100px, 15vw, 220px);
     font-weight: 400;
     font-style: normal;
-    color: rgba(0,0,0,0.55);
-    letter-spacing: 0.02em;
-    line-height: 1.12;
+    color: #000;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
     text-align: center;
-    max-width: 120vw;
+    max-width: 150vw;
+    transform: skewX(-9deg);
   }
   /* 十字架遮罩：顶层深色，中间十字形镂空露出米白空间 */
   .cross-cover {
@@ -2033,25 +2035,25 @@
           // 阶段 A：十字架居中，极短停顿
           crossScale = 1;
           stripX = 0;
-        } else if (zp < 0.22) {
+        } else if (zp < 0.18) {
           // 阶段 B：十字架放缓展开到撑满屏幕
-          var bT = (zp - 0.015) / 0.205;
+          var bT = (zp - 0.015) / 0.165;
           var bE = 1 - Math.pow(1 - bT, 4);
           crossScale = 1 + bE * (CROSS_MAX - 1);
-          stripX = 0; // 前段留白：展开时卷轴不动，不露视频
-        } else if (zp < 0.40) {
-          // 阶段 B2：前段留白（十字架撑满，画面保持米白，滑动一段才进视频）
+          stripX = 0;
+        } else if (zp < 0.35) {
+          // 阶段 B2：十字架撑满后停顿（画面定格，明显停顿）
           crossScale = CROSS_MAX;
           stripX = 0;
-        } else if (zp < 0.88) {
-          // 阶段 C：卷轴横移（视频 + 巨大单词 + 点阵画）
+        } else if (zp < 0.90) {
+          // 阶段 C：卷轴横移（前段留白 padding + 视频 + 点阵画）
           crossScale = CROSS_MAX;
-          var cT = (zp - 0.40) / 0.48;
+          var cT = (zp - 0.35) / 0.55;
           var cE = cT;
           stripX = -(cE * maxStripX);
         } else {
           // 阶段 D：遮罩回收，卷轴停在末尾
-          var dT = (zp - 0.88) / 0.12;
+          var dT = (zp - 0.90) / 0.10;
           var dE = 1 - Math.pow(1 - dT, 4);
           crossScale = CROSS_MAX - dE * (CROSS_MAX - 1);
           stripX = -maxStripX;
@@ -2204,15 +2206,49 @@
           { t: "And now these three remain: faith, hope and love. But the greatest of these is love.", s: "big" }
         ];
         var vHtml = '';
-        for (var vi = 0; vi < 160; vi++) {
+        for (var vi = 0; vi < 90; vi++) {
           var ln = vLines[vi % vLines.length];
           var depth = (0.5 + (vi % 5) * 0.12).toFixed(2);
-          vHtml += '<span class="vline' + (ln.s ? ' ' + ln.s : '') + '" data-depth="' + depth + '">' + ln.t + '</span>';
+          var vchars = ln.t.split('').map(function (c) { return '<span class="ch">' + c + '</span>'; }).join('');
+          vHtml += '<span class="vline' + (ln.s ? ' ' + ln.s : '') + '" data-depth="' + depth + '">' + vchars + '</span>';
         }
         verseBack.innerHTML = vHtml;
+        function randLetter() { var a = 'abcdefghijklmnopqrstuvwxyz'; return a[Math.floor(Math.random() * 26)]; }
+        function spinVline(vline) {
+          var chs = vline.querySelectorAll('.ch');
+          var originals = [];
+          for (var ci = 0; ci < chs.length; ci++) originals.push(chs[ci].textContent);
+          var stagger = 110, rollFrames = 8, frameMs = 55;
+          var startAt = performance.now();
+          function tick(now) {
+            var elapsed = now - startAt;
+            var anyLeft = false;
+            for (var i = 0; i < chs.length; i++) {
+              var ch = chs[i];
+              var t0 = i * stagger, t1 = t0 + rollFrames * frameMs;
+              if (elapsed < t0) { anyLeft = true; continue; }
+              if (elapsed < t1) {
+                var f = Math.floor((elapsed - t0) / frameMs);
+                if (f !== (ch._f || -1)) { ch._f = f; if (ch.textContent !== ' ') ch.textContent = randLetter(); }
+                ch.classList.add('rolling');
+                anyLeft = true;
+              } else if (!ch._done) {
+                ch._done = true;
+                ch.textContent = originals[i];
+                ch.classList.remove('rolling');
+              }
+            }
+            if (anyLeft) requestAnimationFrame(tick);
+          }
+          requestAnimationFrame(tick);
+        }
+        var vlineEls = verseBack.querySelectorAll('.vline');
+        setInterval(function () {
+          if (vlineEls.length) spinVline(vlineEls[Math.floor(Math.random() * vlineEls.length)]);
+        }, 2600);
       }
       if (verseFront) {
-        verseFront.innerHTML = '<span class="vline bigword">THE LIGHT SHINETH IN DARKNESS AND THE DARKNESS COMPREHENDED IT NOT</span>';
+        verseFront.innerHTML = '<span class="vline bigword">IN THE BEGINNING GOD CREATED THE HEAVEN AND THE EARTH AND GOD SAID LET THERE BE LIGHT AND THERE WAS LIGHT</span>';
       }
       measure();
       update();
