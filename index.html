@@ -2103,7 +2103,7 @@
         requestAnimationFrame(easeStep);
       }
       function scrollStep() {
-        scrollCurrent += (scrollTarget - scrollCurrent) * 0.25;
+        scrollCurrent += (scrollTarget - scrollCurrent) * 0.1;
         if (Math.abs(scrollTarget - scrollCurrent) < 0.4) {
           scrollCurrent = scrollTarget;
           scrollAnimating = false;
@@ -2156,7 +2156,8 @@
           return;
         }
         // 第三页：内部滚动驱动（十字架放大→卷轴→遮罩返回），上滑翻回第二页
-        var next3 = scrollTarget + delta;
+        var d3 = Math.max(-120, Math.min(120, delta));
+        var next3 = scrollTarget + d3;
         if (delta < 0 && next3 < p3) {
           startEase(p2);
         } else {
