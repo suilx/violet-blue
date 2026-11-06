@@ -2049,11 +2049,8 @@
           crossScale = CROSS_MAX;
           var t2 = (zp - 0.40) / 0.50;
           var segs = 7; // 7 屏（每屏 2 张视频）
-          var sp = t2 * segs;
-          var si = Math.floor(sp); if (si >= segs) si = segs - 1;
-          var st = sp - si;
-          var se = st * st * (3 - 2 * st); // smoothstep：每屏开头结尾减速
-          var total = (si + se) / segs;
+          // 正弦波阻尼：每屏一个减速带，单调不减、段边界不停顿
+          var total = t2 - Math.sin(t2 * segs * 2 * Math.PI) * (0.035 / segs);
           var gap2 = 224 * window.innerWidth / 100;
           stripX = -(gap2 + total * (maxStripX - gap2));
         } else {
