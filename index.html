@@ -2042,6 +2042,7 @@
         var zp = Math.max(0, Math.min(1, (y - zoneStart) / zoneScroll)); // 第三页内部进度 0~1
         var maxStripX = videoStrip ? Math.max(0, videoStrip.scrollWidth - window.innerWidth) : 0;
         var crossScale = 1, stripX = 0;
+          var cardScales = null;
         var preReveal = maxStripX * 0.05; // 提前量：卷轴先动一小段（背景文字移动，不碍视频位置）
         if (zp < 0.015) {
           // 阶段 A：十字架居中，极短停顿
@@ -2064,9 +2065,27 @@
         if (crossFrame) { crossFrame.setAttribute('transform', 'translate(50 50) scale(' + crossScale.toFixed(3) + ') translate(-50 -50)'); }
         if (crossHint) { crossHint.style.opacity = (zp > 0.03 && zp < 0.72) ? '1' : '0'; }
         if (videoStrip) {
-          var prog = maxStripX > 0 ? (-stripX / maxStripX) : 0; // 0~1
-          var rotY = (prog - 0.5) * 55; // 中间 0 度，两端向内旋转
-          videoStrip.style.transform = 'translateX(' + stripX.toFixed(2) + 'px) rotateY(' + rotY.toFixed(2) + 'deg)';
+          videoStrip.style.transform = 'translateX(' + stripX.toFixed(2) + 'px)';
+          var cards = videoStrip.querySelectorAll('.v-card');
+          if (!cardScales) {
+            cardScales = [];
+            for (var csi = 0; csi < cards.length; csi++) {
+              cardScales[csi] = (csi >= 2) ? (Math.random() < 0.5 ? 2 : 0.75) : 1;
+            }
+          }
+          var half = window.innerWidth / 2;
+          for (var ci = 0; ci < cards.length; ci++) {
+            var ty = (ci % 2 === 0) ? -20 : 20;
+            if (ci <= 1) {
+              cards[ci].style.transform = 'translateY(' + ty + 'vh)';
+              continue;
+            }
+            var cx = cards[ci].offsetLeft + cards[ci].offsetWidth / 2 + stripX;
+            var dist = (cx - half) / half;
+            var angle = dist * 110; // exaggerated 2x
+            var s = cardScales[ci] || 1;
+            cards[ci].style.transform = 'translateY(' + ty + 'vh) scale(' + s + ') rotateY(' + angle.toFixed(2) + 'deg)';
+          }
         }
         if (verseBack) { verseBack.style.transform = 'translateX(' + (stripX * 0.7).toFixed(2) + 'px)'; }
         if (verseFront) { verseFront.style.transform = 'translateX(' + (stripX * 1.45).toFixed(2) + 'px)'; }
