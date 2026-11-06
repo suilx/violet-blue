@@ -978,6 +978,21 @@
     color: rgba(0,0,0,0.42);
     text-transform: uppercase;
   }
+  .halftone-tail {
+    position: relative;
+    z-index: 2;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 5vw;
+    padding: 0 3vw;
+  }
+  .halftone-tail img {
+    height: 44vh;
+    width: auto;
+    opacity: 0.7;
+    display: block;
+  }
   /* 卷轴背景：密密麻麻的圣经段落（跟着卷轴横移，让位移可见） */
   .verse-bg {
     position: absolute;
@@ -1006,15 +1021,18 @@
     gap: 0.5em 1.2em;
   }
   .verse-front {
-    z-index: 2; /* 前景艺术字：介于上下视频卡之间，形成穿插纵深 */
-    font-size: clamp(34px, 5vw, 76px);
-    font-style: italic;
-    font-weight: 400;
-    color: rgba(0,0,0,0.12);
+    z-index: 2; /* 巨大单词：介于上下视频卡之间，遮上被下盖 */
     align-content: center;
     justify-content: center;
-    gap: 1.4em 3em;
-    letter-spacing: 0.06em;
+    padding: 0 4vw;
+  }
+  .verse-front .bigword {
+    font-size: clamp(90px, 17vw, 240px);
+    font-style: italic;
+    font-weight: 400;
+    color: rgba(0,0,0,0.14);
+    letter-spacing: 0.04em;
+    line-height: 1;
   }
   /* 十字架遮罩：顶层深色，中间十字形镂空露出米白空间 */
   .cross-cover {
@@ -1118,6 +1136,11 @@
         <div class="v-card"><div class="v-thumb"><span class="v-num">12</span></div><div class="v-cap">VIDEO 12</div></div>
         <div class="v-card"><div class="v-thumb"><span class="v-num">13</span></div><div class="v-cap">VIDEO 13</div></div>
         <div class="v-card"><div class="v-thumb"><span class="v-num">14</span></div><div class="v-cap">VIDEO 14</div></div>
+        <div class="halftone-tail">
+          <img src="halftone/ht3.png" alt="">
+          <img src="halftone/ht5.png" alt="">
+          <img src="halftone/ht1.png" alt="">
+        </div>
         <div class="verse-bg verse-front" id="verseFront"></div>
       </div>
           </div>
@@ -2003,25 +2026,29 @@
         var crossScale = 1, stripX = 0;
         var preReveal = maxStripX * 0.05; // 提前量：卷轴先动一小段（背景文字移动，不碍视频位置）
         if (zp < 0.015) {
-          // 阶段 A：十字架居中，极短停顿（对齐后随即展开）
+          // 阶段 A：十字架居中，极短停顿
           crossScale = 1;
           stripX = 0;
-        } else if (zp < 0.20) {
-          // 阶段 B：十字架放缓展开到撑满屏幕（镂空覆盖全屏，遮罩自然消失）+ 卷轴提前量
-          var bT = (zp - 0.015) / 0.185;
-          var bE = 1 - Math.pow(1 - bT, 4); // ease-out quart：放缓展开，有仪式感
+        } else if (zp < 0.22) {
+          // 阶段 B：十字架放缓展开到撑满屏幕
+          var bT = (zp - 0.015) / 0.205;
+          var bE = 1 - Math.pow(1 - bT, 4);
           crossScale = 1 + bE * (CROSS_MAX - 1);
-          stripX = -bE * preReveal;
-        } else if (zp < 0.80) {
-          // 阶段 C：卷轴阻尼横移（划过视频），十字架保持撑满（遮罩全隐），慢三倍 + quart 阻尼更柔
+          stripX = 0; // 前段留白：展开时卷轴不动，不露视频
+        } else if (zp < 0.40) {
+          // 阶段 B2：前段留白（十字架撑满，画面保持米白，滑动一段才进视频）
           crossScale = CROSS_MAX;
-          var cT = (zp - 0.20) / 0.60;
-          var cE = cT; // 线性匀速：全程慢三倍，无中间峰值（消除"后面还快"）
-          stripX = -(preReveal + cE * (maxStripX - preReveal));
+          stripX = 0;
+        } else if (zp < 0.88) {
+          // 阶段 C：卷轴横移（视频 + 巨大单词 + 点阵画）
+          crossScale = CROSS_MAX;
+          var cT = (zp - 0.40) / 0.48;
+          var cE = cT;
+          stripX = -(cE * maxStripX);
         } else {
-          // 阶段 D：遮罩回收（十字架缩小回来），动画和展开对称，卷轴停在末尾
-          var dT = (zp - 0.80) / 0.20;
-          var dE = 1 - Math.pow(1 - dT, 4); // ease-out quart：和展开对称
+          // 阶段 D：遮罩回收，卷轴停在末尾
+          var dT = (zp - 0.88) / 0.12;
+          var dE = 1 - Math.pow(1 - dT, 4);
           crossScale = CROSS_MAX - dE * (CROSS_MAX - 1);
           stripX = -maxStripX;
         }
@@ -2181,10 +2208,7 @@
         verseBack.innerHTML = vHtml;
       }
       if (verseFront) {
-        var vWords = ['LIGHT', 'WORD', 'TRUTH', 'LIFE', 'LOVE', 'FAITH', 'HOPE', 'PEACE', 'GRACE', 'GLORY', 'SPIRIT', 'AMEN'];
-        var wHtml = '';
-        for (var wi = 0; wi < 8; wi++) { wHtml += '<span class="vline">' + vWords[wi % vWords.length] + '</span>'; }
-        verseFront.innerHTML = wHtml;
+        verseFront.innerHTML = '<span class="vline bigword">TRUTH</span>';
       }
       measure();
       update();
