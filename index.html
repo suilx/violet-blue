@@ -938,7 +938,7 @@
     display: flex;
     align-items: center;
     gap: 46vw; /* 间距加大：一屏内约 2 个视频页 */
-    padding: 0 6vw 0 112vw; /* 前段留白 112vw：十字架消失后再滑一段才看到 01 */
+    padding: 0 6vw 0 224vw; /* 前段留白 224vw：十字架消失后再滑更长一段才看到 01 */
     z-index: 5;
     will-change: transform;
   }
@@ -2042,7 +2042,8 @@
           var t = (zp - 0.015) / 0.885;
           var e = 1 - Math.pow(1 - t, 3);
           crossScale = 1 + e * (CROSS_MAX - 1);
-          stripX = -(e * maxStripX);
+          var de = 1 - Math.pow(1 - t, 5); // 卷轴阻尼：ease-out quint，末端减速更柔
+          stripX = -(de * maxStripX);
         } else {
           // 阶段 D：遮罩回收，卷轴停在末尾
           var dT = (zp - 0.90) / 0.10;
