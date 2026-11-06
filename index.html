@@ -920,6 +920,7 @@
     width: 100%;
     height: 100vh;
     z-index: 3;
+    perspective: 1600px;
     transform: translateY(100vh);
     will-change: transform;
     overflow: hidden;
@@ -935,6 +936,8 @@
     top: 0;
     left: 0;
     height: 100%;
+    transform-style: preserve-3d;
+    transform-origin: 50% 50%;
     display: flex;
     align-items: center;
     gap: 46vw; /* 间距加大：一屏内约 2 个视频页 */
@@ -2060,7 +2063,11 @@
         if (crossShape) { crossShape.setAttribute('transform', 'translate(50 50) scale(' + crossScale.toFixed(3) + ') translate(-50 -50)'); }
         if (crossFrame) { crossFrame.setAttribute('transform', 'translate(50 50) scale(' + crossScale.toFixed(3) + ') translate(-50 -50)'); }
         if (crossHint) { crossHint.style.opacity = (zp > 0.03 && zp < 0.72) ? '1' : '0'; }
-        if (videoStrip) { videoStrip.style.transform = 'translateX(' + stripX.toFixed(2) + 'px)'; }
+        if (videoStrip) {
+          var prog = maxStripX > 0 ? (-stripX / maxStripX) : 0; // 0~1
+          var rotY = (prog - 0.5) * 55; // 中间 0 度，两端向内旋转
+          videoStrip.style.transform = 'translateX(' + stripX.toFixed(2) + 'px) rotateY(' + rotY.toFixed(2) + 'deg)';
+        }
         if (verseBack) { verseBack.style.transform = 'translateX(' + (stripX * 0.7).toFixed(2) + 'px)'; }
         if (verseFront) { verseFront.style.transform = 'translateX(' + (stripX * 1.45).toFixed(2) + 'px)'; }
         if (y > vh * 0.45) { scripture.classList.add('visible'); }
