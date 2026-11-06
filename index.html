@@ -2066,11 +2066,11 @@
         if (crossHint) { crossHint.style.opacity = (zp > 0.03 && zp < 0.72) ? '1' : '0'; }
         if (videoStrip) {
           var prog = maxStripX > 0 ? (-stripX / maxStripX) : 0; // 0~1
-          var rotY = (prog - 0.5) * 60; // 卷轴整体鱼眼旋转
+          var rotY = (prog - 0.5) * 180; // 卷轴整体鱼眼旋转（三倍）
           videoStrip.style.transformOrigin = (-stripX + window.innerWidth / 2) + 'px 50%'; // 旋转中心随视口居中
           videoStrip.style.transform = 'translateX(' + stripX.toFixed(2) + 'px) rotateY(' + rotY.toFixed(2) + 'deg)';
           var cards = videoStrip.querySelectorAll('.v-card');
-          var scalePattern = [1.0, 4.0, 2.0, 0.8, 1.0, 1.5, 4.0, 2.0, 0.8, 1.5, 6.0, 0.8, 1.0, 1.5];
+          var scalePattern = [1.0, 2.0, 2.0, 0.8, 1.0, 1.5, 2.0, 2.0, 0.8, 1.5, 3.0, 0.8, 1.0, 1.5];
           for (var ci = 0; ci < cards.length; ci++) {
             var ty = (ci % 2 === 0) ? -20 : 20;
             var s = scalePattern[ci] || 1;
