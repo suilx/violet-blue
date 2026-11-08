@@ -1308,24 +1308,8 @@
         <h2 class="guestbook-title">Inscriptions</h2>
         <p class="guestbook-sub">Leave a message &mdash; anyone can write here.</p>
       </div>
-      <div class="giscus"></div>
-      <script src="https://giscus.app/client.js"
-        data-repo="suilx/violet-blue"
-        data-repo-id="R_kgDOVhvsBA"
-        data-category="General"
-        data-category-id="DIC_kwDOVhvsBM4DKVIG"
-        data-mapping="specific"
-        data-term="Guestbook"
-        data-strict="0"
-        data-reactions-enabled="0"
-        data-emit-metadata="0"
-        data-input-position="top"
-        data-theme="dark"
-        data-lang="zh-CN"
-        data-loading="lazy"
-        crossorigin="anonymous"
-        async>
-      </script>
+      <p class="guestbook-sub" id="guestbookStatus" role="status"></p>
+      <div data-disfora-comments></div>
     </div>
   </div>
   <div class="guestbook-stage" id="linkStage">
@@ -2349,7 +2333,6 @@
 
       function switchTheme() {
         isLight = !isLight;
-        setGiscusTheme(isLight ? 'light' : 'dark');
         themeBtn.style.transform = isLight ? 'rotate(180deg)' : 'rotate(0deg)';
         var th = songThemes[current] || songThemes[0];
         var targetBg = isLight ? th.light.bg : th.dark.bg;
@@ -2516,18 +2499,30 @@
 
       // 留言板
       var guestbookStage = document.getElementById('guestbookStage');
-      function setGiscusTheme(theme) {
-        var giscusFrame = document.querySelector('iframe.giscus-frame');
-        if (giscusFrame && giscusFrame.contentWindow) {
-          giscusFrame.contentWindow.postMessage(
-            { giscus: { setConfig: { theme: theme } } },
-            'https://giscus.app'
-          );
-        }
+      var guestbookStatus = document.getElementById('guestbookStatus');
+      var guestbookScript;
+      function loadGuestbook() {
+        if (guestbookScript) return;
+
+        guestbookStatus.textContent = 'Loading messages…';
+        guestbookScript = document.createElement('script');
+        guestbookScript.src = 'https://disfora.com/public/disfora.js';
+        guestbookScript.async = true;
+        guestbookScript.dataset.floatingButton = 'false';
+        guestbookScript.addEventListener('load', function () {
+          guestbookStatus.textContent = '';
+        }, { once: true });
+        guestbookScript.addEventListener('error', function () {
+          guestbookScript.remove();
+          guestbookScript = null;
+          guestbookStatus.textContent = 'Could not load messages. Reopen Inscriptions to retry.';
+        }, { once: true });
+        document.head.append(guestbookScript);
       }
       function openGuestbook() {
         closeSidebar();
         guestbookStage.classList.add('open');
+        loadGuestbook();
       }
       function closeGuestbook() {
         guestbookStage.classList.remove('open');
