@@ -251,33 +251,44 @@ function mountReel(root, embedded = false) {
     return 782 + 57 * Math.sin((x - 404) / 338) + 12 * Math.sin((x + 34) / 139);
   }
 
-  function buildGroundType() {
+  function buildGroundType(tailLength = 0) {
+    groundType.replaceChildren();
+    groundFoot.replaceChildren();
     const noise = seededNoise(719);
     let cursor = 0;
     const wordRun = scriptureWords.concat(scriptureWords);
-    for (let depth = -12; depth < 325; depth += 4.1 + Math.max(0, depth) * 0.023) {
+    const limit = tailLength ? 330 + tailLength : 325;
+    for (let depth = -12; depth < limit;) {
       let x = -45 + noise() * 40;
       const phase = noise() * fullTurn;
       while (x < 1570) {
-        const size = (4.3 + Math.max(0, depth) * 0.033) * (0.74 + noise() * 0.67);
+        const fade = tailLength ? clamp((groundAt(x) + depth - 1024) / tailLength) : 0;
+        const size = (4.3 + Math.min(325, Math.max(0, depth)) * 0.033)
+          * (0.74 + noise() * 0.67) * (1 - fade * 0.79);
         const count = 2 + Math.floor(noise() * 7);
         const text = wordRun.slice(cursor, cursor + count).join(" ");
         cursor = (cursor + count) % scriptureWords.length;
         const extent = size * text.length * (0.47 + noise() * 0.10);
         const middle = x + extent / 2;
         const ridge = groundAt(middle);
-        const drift = (6 + depth * 0.021) * Math.sin(middle / 53 + phase);
+        const drift = (6 + Math.min(depth, 325) * 0.021) * Math.sin(middle / 53 + phase);
         const y = ridge + depth + drift + (noise() - 0.4) * size * 1.8;
         const angle = Math.atan2(groundAt(x + extent) - groundAt(x), extent) * 180 / Math.PI
           + (noise() - 0.5) * 20;
-        if (y < 1040 && (depth > 15 || noise() > 0.26)) {
+        const onSlope = y < 1044;
+        const onTail = tailLength > 0 && y > 1000 && fade < 1;
+        if ((onSlope || onTail) && (depth > 15 || noise() > 0.26)
+          && (fade === 0 || noise() > fade * 0.82)) {
           const shade = Math.round(32 + noise() * 65 + 20 * Math.sin(middle * 0.013 + depth * 0.025));
-          const line = placeText(groundType, text, x, y, size, angle, extent);
+          const line = placeText(onSlope ? groundType : groundFoot, text, x, y, size, angle, extent);
           line.setAttribute("fill", `rgb(${shade} ${shade} ${shade})`);
-          line.setAttribute("opacity", (0.29 + 0.66 * smooth((depth + 16) / 92)).toFixed(2));
+          const opacity = (0.29 + 0.66 * smooth((depth + 16) / 92)) * (1 - fade) ** 1.65;
+          line.setAttribute("opacity", opacity.toFixed(2));
+          if (onSlope && onTail) groundFoot.append(line.cloneNode(true));
         }
-        x += extent * (0.86 + noise() * 0.29);
+        x += extent * (0.86 + noise() * 0.29 + fade * 1.8);
       }
+      depth += 4.1 + Math.min(415, Math.max(0, depth)) * 0.023;
     }
   }
 
@@ -382,6 +393,7 @@ function mountReel(root, embedded = false) {
     epilogueStem.replaceChildren();
     const noise = seededNoise(413);
     const end = height + length;
+    epilogueStem.setAttribute("transform", `translate(0 ${-height})`);
     const step = clamp(cross.shaftWidth / 6, 6, 10);
     const fragments = scriptureWords.concat(scriptureWords);
     let cursor = 0;
@@ -390,10 +402,11 @@ function mountReel(root, embedded = false) {
       const width = cross.shaftWidth * (0.94 - tip * 0.73);
       // A tall narrow viewport can bring the extended diagonal close to the edge.
       const x = Math.max(width / 2 + 4, cross.footX - (y - cross.footY) * cross.slope);
-      const line = placeText(y < height ? codaStem : epilogueStem, fragments[cursor],
-        x + (noise() - 0.5) * width * 0.21, y < height ? y : y - height,
+      const line = placeText(y < height + step ? codaStem : epilogueStem, fragments[cursor],
+        x + (noise() - 0.5) * width * 0.21, y,
         step * (0.96 + noise() * 0.29), (noise() - 0.5) * 17, width * (0.72 + noise() * 0.28));
       line.setAttribute("opacity", (0.72 + noise() * 0.24).toFixed(2));
+      if (y >= height - step && y < height + step) epilogueStem.append(line.cloneNode(true));
       cursor = (cursor + 1) % scriptureWords.length;
     }
   }
@@ -406,33 +419,10 @@ function mountReel(root, embedded = false) {
     epilogueWords.setAttribute("viewBox", `0 0 ${width} ${length}`);
     epilogueWords.querySelector("#epilogue-paper").setAttribute("gradientTransform",
       `translate(0 ${-height}) scale(${width} ${height})`);
-    groundFoot.replaceChildren();
-    const noise = seededNoise(926);
-    const words = scriptureWords.concat(scriptureWords);
-    const startSize = clamp(width / 112, 12, 17);
-    let cursor = 0;
-    for (let depth = 9; depth < length * 0.92;) {
-      const progress = depth / (length * 0.92);
-      const size = startSize * (1 - 0.79 * progress);
-      const ink = (1 - progress) ** 1.65;
-      let x = -22 + noise() * 20;
-      while (x < width) {
-        const textSize = size * (0.85 + noise() * 0.36);
-        const count = 2 + Math.floor(noise() * 7);
-        const text = words.slice(cursor, cursor + count).join(" ");
-        cursor = (cursor + count) % scriptureWords.length;
-        const extent = text.length * textSize * (0.46 + noise() * 0.11);
-        const drift = (Math.sin(x / 73 + depth * 0.027) * 8 + Math.sin(x / 211) * 13) * (1 - progress);
-        const y = depth + drift + noise() * 10;
-        if (noise() < 0.11 + ink * 0.88) {
-          const line = placeText(groundFoot, text, x, y, textSize, (noise() - 0.5) * 16, extent);
-          line.setAttribute("fill", "#393733");
-          line.setAttribute("opacity", (ink * (0.44 + noise() * 0.49)).toFixed(2));
-        }
-        x += extent * (0.9 + noise() * 0.31 + progress * 2);
-      }
-      depth += Math.max(15, size * 0.82) + progress * 4;
-    }
+    const scale = Math.max(width / 1536, height / 1024);
+    groundFoot.setAttribute("transform",
+      `translate(${(width - 1536 * scale) / 2} ${-1024 * scale}) scale(${scale})`);
+    buildGroundType(length * 0.93 / scale);
     buildCodaStem(cross, length);
   }
 
@@ -723,6 +713,7 @@ function mountReel(root, embedded = false) {
     reel.style.setProperty("--reel-height", `${Math.ceil((lastChapter + codaTravel) * height + window.innerHeight + closingPause)}px`);
     scriptureArt.setAttribute("viewBox", `0 0 ${width} ${height}`);
     if (embedded) measureEpilogue(cross);
+    else if (!groundType.hasChildNodes()) buildGroundType();
     const stageRect = stage.getBoundingClientRect();
     const crossRect = scriptureCross.getBoundingClientRect();
     const stemRect = codaStem.getBoundingClientRect();
@@ -754,7 +745,6 @@ function mountReel(root, embedded = false) {
   document.addEventListener("visibilitychange", updatePlayback);
   window.addEventListener("scroll", scheduleDraw, { passive: true });
   window.addEventListener("resize", measure);
-  buildGroundType();
   buildFieldCrosses();
   buildScriptureCross();
   measure();

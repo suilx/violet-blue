@@ -38,6 +38,7 @@
   body.light .lyrics-photo { filter: none; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { scroll-behavior: auto; }
+  html.chapter-snap { scroll-snap-type: y proximity; }
   body {
     background: var(--bg);
     color: var(--fg);
@@ -70,9 +71,10 @@
     background: radial-gradient(ellipse 82% 70% at 50% 0%, color-mix(in srgb, var(--bg) 35%, var(--site-glow)), transparent 79%);
   }
   #introSpacer { position: relative; height: 200vh; pointer-events: none; }
-  #reading { position: absolute; top: var(--reading-start, 100vh); }
+  #reading { position: absolute; top: var(--reading-start, 100vh); width: 1px; height: 1px; }
+  #reading, #thirdPage { scroll-snap-align: start; }
   #originalVideoStart { position: absolute; top: var(--original-start, 200vh); left: 0; }
-  .reading-tail { flex: 0 0 clamp(128px, 17vh, 210px); width: 100%; }
+  .reading-tail { flex: 0 0 clamp(128px, 17vh, 210px); width: 100%; margin-top: clamp(100px, 21vh, 270px); }
   .reading-clip-defs { position: absolute; width: 0; height: 0; }
   .scripture.pixel-exit { z-index: 4; background-color: var(--bg); clip-path: url(#readingPixelClip); }
   body.reel-at-top .scripture { visibility: hidden; }
@@ -2049,6 +2051,7 @@
       var thirdPage = document.getElementById('thirdPage');
       var originalReel = document.getElementById('originalReel');
       var useOriginalReel = new URLSearchParams(location.search).has('original');
+      document.documentElement.classList.toggle('chapter-snap', !useOriginalReel);
       if (useOriginalReel) {
         document.body.classList.add('original-reel');
         originalReel.replaceWith(originalReel.content);
@@ -2082,7 +2085,7 @@
       }
 
       function measureSeam(width, height, depth) {
-        var size = Math.max(8, Math.min(13, Math.round(width / 116)));
+        var size = Math.max(5, Math.min(9, Math.round(width / 172)));
         var top = height - depth;
         var rows = Math.ceil(depth / size);
         var columns = Math.ceil(width / size);
@@ -2090,8 +2093,8 @@
         seamTiles = [];
         for (var row = 0; row < rows; row++) {
           for (var column = 0; column < columns; column++) {
-            var blockX = Math.floor(column / 3);
-            var blockY = Math.floor(row / 3);
+            var blockX = Math.floor(column / 4);
+            var blockY = Math.floor(row / 4);
             var group = seamNoise(blockX, blockY);
             var grain = seamNoise(column, row);
             var field = 0.88 - (row + 0.5) / rows
@@ -2879,7 +2882,7 @@
   <script type="module">
     const host = document.querySelector('#thirdPage');
     if (!host.hidden) {
-      import('./reel-preview/reel.js?v=2')
+      import('./reel-preview/reel.js?v=3')
         .then(({ embedReel }) => embedReel(host))
         .catch(() => { /* The direct link is available when embedding fails. */ });
     }
