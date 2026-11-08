@@ -34,7 +34,6 @@
     --graffiti: Georgia, 'Palatino Linotype', 'Book Antiqua', serif;
   }
   /* 颜色变量由 JS 按当前歌曲 + 明暗主题动态设置（见 songThemes / applySongTheme） */
-  body.light .wall .word { color: rgba(var(--ink), 0.18); }
   body.light .lyrics-photo { filter: none; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { scroll-behavior: auto; }
@@ -61,130 +60,148 @@
   }
 
   /* ============ 第一块：圣经十字架（stage，下滑渐隐） ============ */
+  body { --hero-paper: #efede7; }
+  body.light { --hero-paper: #f8f7f3; }
   .stage {
     position: fixed;
     inset: 0;
     z-index: 1;
+    overflow: clip;
     will-change: transform, opacity;
+    background: var(--hero-paper);
   }
-  body:not(.light) .stage {
-    background: radial-gradient(ellipse 82% 70% at 50% 0%, color-mix(in srgb, var(--bg) 35%, var(--site-glow)), transparent 79%);
+  .chapter-snap .stage {
+    position: absolute;
+    bottom: auto;
+    height: var(--reading-start, 100vh);
+    z-index: 5;
+    overflow-x: clip;
+    overflow-y: visible;
+    clip-path: inset(0 0 calc(-1 * var(--cross-reach, 100svh)));
   }
   #introSpacer { position: relative; height: 200vh; pointer-events: none; }
   #reading { position: absolute; top: var(--reading-start, 100vh); width: 1px; height: 1px; }
   #reading, #thirdPage { scroll-snap-align: start; }
   #originalVideoStart { position: absolute; top: var(--original-start, 200vh); left: 0; }
   .reading-tail { flex: 0 0 clamp(128px, 17vh, 210px); width: 100%; margin-top: clamp(100px, 21vh, 270px); }
-  .reading-clip-defs { position: absolute; width: 0; height: 0; }
-  .scripture.pixel-exit { z-index: 4; background-color: var(--bg); clip-path: url(#readingPixelClip); }
+  .chapter-snap .scripture {
+    --reading-paper: var(--hero-paper);
+    position: absolute;
+    top: var(--reading-start, 100vh);
+    transform: none;
+    will-change: auto;
+    overflow-x: clip;
+    min-height: 132svh;
+    padding-inline: 6.1vw;
+    background: var(--reading-paper);
+  }
+  .reading-pixels { position: absolute; inset: auto 0 0; width: 100%; pointer-events: none; }
+  .chapter-snap .scripture.pixel-exit { z-index: 4; background: none; }
+  .scripture.pixel-exit::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: var(--reading-backdrop, none) var(--reading-paper, var(--bg));
+    clip-path: inset(0 0 calc(var(--reading-pixel-depth) - 1px) 0);
+  }
   body.reel-at-top .scripture { visibility: hidden; }
   #thirdPage { position: relative; z-index: 3; min-height: 100vh; }
+  .chapter-snap #thirdPage::before {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    inset: 0 0 auto;
+    height: clamp(34px, 8svh, 76px);
+    background: linear-gradient(var(--hero-paper), transparent);
+    pointer-events: none;
+  }
   .reel-fallback { display: grid; place-items: center; min-height: 100vh; color: var(--fg); }
   body.reel-at-top > header { visibility: hidden; }
   body.original-reel .reading-tail { display: none; }
   body:not(.original-reel) #drawerTrigger { display: none; }
-  .stage[inert] .halo { animation-play-state: paused; }
   @media (prefers-reduced-motion: reduce) {
-    .stage .halo { animation: none; }
-    .scripture .scripture-quote, .scripture p, .scripture .drawer-trigger { transition: none; }
+    .scripture .drawer-trigger { transition: none; }
   }
-  .halo {
-    position: absolute;
-    top: -38vh;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 110vw;
-    height: 80vh;
-    pointer-events: none;
-    animation: breathe 9s ease-in-out infinite;
-  }
-  @keyframes breathe { 0%,100% { opacity:.55; } 50% { opacity:1; } }
-
-  .mask {
-    position: absolute;
-    top: -60vh;
-    left: 0;
-    right: 0;
-    height: 220vh;
-    pointer-events: none;
-    background:
-      radial-gradient(circle 200vh at 0 60vh, rgba(var(--shade),0.5) 0%, rgba(var(--shade),0.28) 20%, rgba(var(--shade),0.12) 38%, rgba(var(--shade),0.03) 50%, rgba(var(--shade),0) 60%),
-      radial-gradient(circle 200vh at 100% 60vh, rgba(var(--shade),0.5) 0%, rgba(var(--shade),0.28) 20%, rgba(var(--shade),0.12) 38%, rgba(var(--shade),0.03) 50%, rgba(var(--shade),0) 60%),
-      radial-gradient(circle 200vh at 0 160vh, rgba(var(--shade),0.5) 0%, rgba(var(--shade),0.28) 20%, rgba(var(--shade),0.12) 38%, rgba(var(--shade),0.03) 50%, rgba(var(--shade),0) 60%),
-      radial-gradient(circle 200vh at 100% 160vh, rgba(var(--shade),0.5) 0%, rgba(var(--shade),0.28) 20%, rgba(var(--shade),0.12) 38%, rgba(var(--shade),0.03) 50%, rgba(var(--shade),0) 60%);
-    opacity: 0;
-    transition: opacity 1.4s ease;
-  }
-  .mask.on { opacity: 1; }
-
-  .wall {
-    position: absolute;
-    top: -60vh;
-    left: 0;
-    right: 0;
-    height: 220vh;
-    pointer-events: none;
-    overflow: hidden;
-    padding: 5vh 3.5vw;
-    display: flex;
-    flex-wrap: wrap;
-    align-content: flex-start;
-    align-items: flex-start;
-    opacity: 0;
-    transition: opacity 2.2s ease;
-  }
-  .wall.on { opacity: 1; }
-  .wall.on .word { pointer-events: auto; }
-  .wall .word {
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: baseline;
-    font-family: var(--sans);
-    font-weight: 300;
-    font-size: clamp(14px, 1.75vw, 23px);
-    line-height: 1.75;
-    letter-spacing: 0.02em;
-    color: rgba(var(--ink),0.14);
-    margin-right: 0.7em;
-  }
-  .wall .word .ch { transition: color .12s ease; }
-  .wall .word .ch.first { font-size: 1.5em; font-weight: 400; line-height: 0.82; }
-  .wall .word .ch.rolling { color: rgba(var(--ink),0.16); }
-  .wall .word.link {
-    pointer-events: auto;
-    color: rgba(var(--ink),0.14);
-    text-decoration: none;
-    cursor: pointer;
-    animation: linkBreathe 10s ease-in-out infinite;
-  }
-  .wall .word.link .ch { color: inherit; }
-  .wall .word.link:hover {
-    color: rgba(var(--ink),0.95);
-    filter: drop-shadow(0 0 5px rgba(var(--ink),0.4)) drop-shadow(0 0 14px rgba(var(--ink),0.16));
-  }
-  @keyframes linkBreathe { 0%,100% { opacity:.5; } 50% { opacity:1; } }
 
   .cross {
+    --cross-size: clamp(100svh, 86vw, 170svh);
+    --cross-anchor: 65%;
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    inset: 0 0 0 50%;
     background: none;
     border: none;
     cursor: pointer;
     padding: 0;
     outline: none;
   }
-  .cross svg { width: clamp(100px, 13vw, 160px); height: auto; display: block; transform-box: fill-box; transform-origin: center; filter: drop-shadow(0 0 5px rgba(var(--ink),0.22)) drop-shadow(0 0 16px rgba(var(--ink),0.10)) drop-shadow(0 0 34px rgba(var(--ink),0.05)); transition: filter .5s ease, opacity .5s ease; }
-  .cross svg path { fill: var(--fg); opacity: 0.88; transition: opacity .35s ease; }
-  .cross:hover svg { filter: drop-shadow(0 0 7px rgba(var(--ink),0.32)) drop-shadow(0 0 20px rgba(var(--ink),0.14)) drop-shadow(0 0 44px rgba(var(--ink),0.07)); }
-  .cross:hover svg path { opacity: 1; }
-  .cross.playing svg { animation: breathe 5s ease-in-out infinite; }
-  @keyframes breathe {
-    0%   { opacity: 0.78; transform: scale(0.99); }
-    40%  { opacity: 1;    transform: scale(1.03); }
-    100% { opacity: 0.78; transform: scale(0.99); }
+  .cross > canvas, .cross > svg {
+    display: block;
+    position: absolute;
+    top: var(--cross-anchor);
+    left: 52%;
+    transform: translate(-50%, -50%) rotate(9deg);
+    pointer-events: none;
   }
+  .cross canvas { width: var(--cross-size); aspect-ratio: 1; }
+  .chapter-snap .cross > canvas {
+    top: calc(var(--cross-anchor) - var(--cross-size) / 2);
+    height: max(var(--cross-size), calc(100% - var(--cross-anchor) + var(--cross-size) / 2 + var(--cross-reach, 100svh) + 3svh));
+    transform: translateX(-50%) rotate(9deg);
+    transform-origin: 50% calc(var(--cross-size) / 2);
+  }
+  .cross svg { width: min(46vw, 90svh); height: auto; fill: #231a18; }
+  .cross [hidden] { display: none; }
+  .cross:focus-visible { outline: 1px solid #5e4642; outline-offset: -8px; }
+  @media (max-aspect-ratio: 4/5) {
+    .cross { --cross-anchor: 51%; --cross-size: 112vw; }
+    .cross > canvas, .cross > svg { left: 57%; }
+  }
+
+  @font-face {
+    font-family: 'Six Caps';
+    src: url('reel-preview/fonts/six-caps.woff2') format('woff2');
+    font-display: swap;
+  }
+  .hero-copy {
+    position: absolute;
+    z-index: 2;
+    top: 37%;
+    left: 6.1vw;
+    width: 46vw;
+    pointer-events: none;
+  }
+  .song-title {
+    color: #231a18;
+    font: 400 clamp(42px, min(10.1vw, 17svh), 146px)/1.04 'Six Caps', 'Anton', sans-serif;
+    letter-spacing: .035em;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+  .song-title-word, .song-title-letter, .song-title-letter > span { display: inline-block; }
+  .song-title-word { white-space: nowrap; }
+  .song-title-letter { pointer-events: auto; }
+  .song-title-letter > span {
+    pointer-events: none;
+    transform-origin: center top;
+    transition: transform 360ms cubic-bezier(.22,.74,.27,1);
+  }
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .song-title-letter:hover > span { transform: scaleY(1.27); }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .song-title-letter { animation: song-letter-in 520ms both; }
+    @keyframes song-letter-in {
+      from { opacity: 0; transform: translateY(.15em); }
+      72% { opacity: .85; transform: translateY(-.025em); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  }
+  @media (max-aspect-ratio: 4/5) {
+    .hero-copy { top: 26%; left: 5vw; width: 65vw; }
+  }
+  .song-title-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 
   header {
     position: fixed;
@@ -199,6 +216,8 @@
     pointer-events: none;
   }
   header .logo { font-size: 19px; letter-spacing: 0.34em; text-indent: 0.34em; text-transform: lowercase; color: var(--fg); font-weight: 400; pointer-events: auto; }
+  body:not(.hero-past) > header .logo,
+  body:not(.hero-past) > header .mark { color: #231a18; }
   header .mark {
     font-size: 18px;
     color: var(--dim);
@@ -230,8 +249,9 @@
     padding: 6vh 10vw 6vh;
   }
   .scripture-inner { display: flex; flex-direction: column; gap: 3em; max-width: 44em; }
-  body:not(.light) .scripture {
-    background: radial-gradient(ellipse 85% 85% at 50% 26%, color-mix(in srgb, var(--bg) 25%, var(--site-verse)), var(--bg) 92%);
+  body.original-reel:not(.light) .scripture {
+    --reading-backdrop: radial-gradient(ellipse 85% 85% at 50% 26%, color-mix(in srgb, var(--bg) 25%, var(--site-verse)), var(--bg) 92%);
+    background: var(--reading-backdrop);
   }
   .scripture-halftone {
     position: absolute;
@@ -351,54 +371,37 @@
   }
   .lyrics-photo.show { opacity: 1; }
   .lyrics-line.hidden { display: none; }
-  .scripture-quote {
-    width: 100%;
-    max-width: 44em;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1.4em;
-    margin-top: 3em;
-    opacity: 0;
-    transform: translateY(26px);
-    transition: opacity 1.4s ease, transform 1.4s ease;
+  .chapter-snap .scripture-halftone, .chapter-snap .lyrics-photo { display: none; }
+  .chapter-snap .scripture::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: -8vw;
+    width: 48vw;
+    height: 75svh;
+    pointer-events: none;
+    transform: rotate(9deg);
+    background: radial-gradient(circle, #261d1b 0 1px, transparent 1.6px) 0 0 / 9px 9px;
+    mask-image: radial-gradient(ellipse 56% 64% at 65% 0%, #0007, transparent);
   }
-  .scripture.visible .scripture-quote { opacity: 1; transform: none; }
-  .scripture-quote p {
-    font-family: var(--graffiti);
-    font-weight: 400;
-    font-style: normal;
-    font-size: clamp(20px, 2.2vw, 28px);
-    line-height: 1.75;
-    text-align: center;
-    color: rgba(var(--ink),0.92);
+  .chapter-snap .hero-copy .lyrics {
+    align-items: flex-start;
+    margin-top: clamp(26px, 5svh, 58px);
+    max-width: none;
+    opacity: 1;
+    transform: none;
   }
-  .scripture-ref {
-    font-family: var(--sans);
-    font-weight: 300;
-    font-size: 12px;
-    letter-spacing: 0.22em;
-    color: rgba(var(--ink),0.68);
+  .chapter-snap .hero-copy .lyrics-body {
+    justify-content: flex-start;
+    min-height: 0;
+    padding: 0;
   }
-  .scripture p {
-    font-family: var(--serif);
-    font-weight: 400;
-    font-size: clamp(20px, 2.2vw, 29px);
-    line-height: 1.75;
-    letter-spacing: 0.01em;
-    color: rgba(var(--ink),0.76);
-    text-align: center;
-    opacity: 0;
-    transform: translateY(26px);
-    transition: opacity 1.4s ease, transform 1.4s ease;
+  .chapter-snap .lyrics-line {
+    justify-content: flex-start;
+    max-width: 100%;
+    color: #231a18;
   }
-  .scripture.visible p { opacity: 1; transform: none; }
-  .scripture.visible p:nth-child(2) { transition-delay: .18s; }
-  .scripture.visible p:nth-child(3) { transition-delay: .36s; }
-  .scripture.visible p:nth-child(4) { transition-delay: .54s; }
-  .scripture.visible p:nth-child(5) { transition-delay: .72s; }
-  .scripture.visible p:nth-child(6) { transition-delay: .9s; }
-  .scripture.visible p:nth-child(7) { transition-delay: 1.08s; }
+  .chapter-snap .signature { color: #231a1870; }
 
   .drawer-trigger {
     margin-top: 6vh;
@@ -462,7 +465,7 @@
     background: var(--bg);
     border-right: 2px solid rgba(var(--ink),0.5);
     box-shadow: -5px 0 0 rgba(var(--ink),0.2), inset -2px 0 0 rgba(var(--ink),0.05), 3px 0 28px rgba(0,0,0,0.55);
-    transform: translateX(-102%);
+    transform: translateX(calc(-100% - 36px));
     transition: transform .5s cubic-bezier(.22,.61,.36,1);
     overflow: hidden;
   }
@@ -936,7 +939,6 @@
   @media (max-width: 560px) {
     header { padding: 28px 24px; }
     header .logo { letter-spacing: 0.22em; text-indent: 0.22em; }
-    .cross svg { width: 90px; }
     .scripture { padding: 6vh 6vw 6vh; }
     .lyrics-body { min-height: 34vh; padding: 1.5em 0.9em; }
     .lyrics-line { font-size: clamp(15px, 4.6vw, 20px); line-height: 1.5; row-gap: 0.4em; }
@@ -1108,28 +1110,13 @@
 </head>
 <body>
   <div class="stage" id="stage">
-  <svg class="halo" viewBox="0 0 1200 900" preserveAspectRatio="none" aria-hidden="true">
-    <defs>
-      <radialGradient id="haloGrad" cx="50%" cy="0%" r="85%">
-        <stop offset="0%" stop-color="var(--fg)" stop-opacity="0.14"/>
-        <stop offset="20%" stop-color="var(--fg)" stop-opacity="0.09"/>
-        <stop offset="40%" stop-color="var(--fg)" stop-opacity="0.055"/>
-        <stop offset="58%" stop-color="var(--fg)" stop-opacity="0.03"/>
-        <stop offset="75%" stop-color="var(--fg)" stop-opacity="0.012"/>
-        <stop offset="100%" stop-color="var(--fg)" stop-opacity="0"/>
-      </radialGradient>
-      <filter id="haloDither" x="-10%" y="-10%" width="120%" height="120%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="1" stitchTiles="stitch" result="noise"/>
-        <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.004 0" result="dither"/>
-        <feComposite in="SourceGraphic" in2="dither" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
-      </filter>
-    </defs>
-    <rect width="100%" height="100%" fill="url(#haloGrad)" filter="url(#haloDither)"/>
-  </svg>
-    <div class="mask" id="mask"></div>
-    <div class="wall" id="wall"></div>
-    <button class="cross" id="crossBtn" aria-label="Play / Pause">
-      <svg viewBox="0 0 56 82" xmlns="http://www.w3.org/2000/svg">
+    <div class="hero-copy" id="heroCopy">
+      <div class="song-title" id="songTitle" aria-hidden="true"></div>
+    </div>
+    <div class="song-title-status" id="songTitleStatus" role="status"></div>
+    <button class="cross" id="crossBtn" aria-label="播放音乐" aria-pressed="false">
+      <canvas id="heroCross" aria-hidden="true" hidden></canvas>
+      <svg viewBox="0 0 56 82" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path d="M24 0h8v24h24v8H32v50h-8V32H0v-8h24V0z"/>
       </svg>
     </button>
@@ -1154,19 +1141,13 @@
         <div class="lyrics-line" id="lyricsLine"></div>
       </div>
     </div>
-    <div class="scripture-quote" id="scriptureQuote">
-      <p>In the beginning was the Word, and the Word was with God, and the Word was God. The same was in the beginning with God. All things were made by him; and without him was not any thing made that was made. In him was life; and the life was the light of men. And the light shineth in darkness; and the darkness comprehended it not.</p>
-      <span class="scripture-ref">(John 1:1-5)</span>
-    </div>
     <button class="drawer-trigger" id="drawerTrigger">READ MORE</button>
     <div class="signature">suilx</div>
     <div class="reading-tail" id="readingTail" aria-hidden="true"></div>
+    <canvas class="reading-pixels" id="readingPixels" aria-hidden="true" hidden></canvas>
   </section>
 
   <div id="introSpacer" aria-hidden="true"><span id="reading"></span></div>
-  <svg class="reading-clip-defs" aria-hidden="true" focusable="false">
-    <defs><clipPath id="readingPixelClip" clipPathUnits="userSpaceOnUse"><path id="readingPixels"/></clipPath></defs>
-  </svg>
   <section id="thirdPage" aria-label="第三页 · 十四幕影像">
     <a class="reel-fallback" href="reel-preview/">打开十四幕影像</a>
   </section>
@@ -1261,6 +1242,7 @@
               <a class="side-sub-item" href="https://www.twitch.tv/suilx1" target="_blank" data-newtab rel="noopener">Twitch</a>
               <a class="side-sub-item" href="https://v.douyin.com/iX-KHJTjcxU/" target="_blank" data-newtab rel="noopener">TikTok</a>
               <a class="side-sub-item" href="https://steamcommunity.com/id/suilx/" target="_blank" data-newtab rel="noopener">Steam</a>
+              <a class="side-sub-item" href="https://music.163.com/#/user/home?id=287888230" target="_blank" data-newtab rel="noopener">NetEase Music</a>
             </div>
           </div>
           <div class="side-group">
@@ -1358,162 +1340,17 @@
 
   <script>
     (function () {
-      var lines = [
-        'in the beginning god created the heaven and the earth',
-        'and god said let there be light and there was light',
-        'and god saw the light that it was good',
-        'the lord is my shepherd i shall not want',
-        'he maketh me to lie down in green pastures',
-        'he leadeth me beside the still waters',
-        'he restoreth my soul',
-        'yea though i walk through the valley of the shadow of death i will fear no evil',
-        'surely goodness and mercy shall follow me all the days of my life',
-        'i am the way the truth and the life',
-        'blessed are the pure in heart for they shall see god',
-        'be still and know that i am god',
-        'the light shineth in darkness and the darkness comprehended it not',
-        'peace i leave with you my peace i give unto you',
-        'thy word is a lamp unto my feet and a light unto my path',
-        'in my fathers house are many mansions',
-        'let not your heart be troubled neither let it be afraid',
-        'the truth shall make you free'
-      ];
-      var entries = [];
-      lines.forEach(function (l) {
-        var ws = l.split(' ').filter(function (w) { return w; });
-        ws.forEach(function (w, i) {
-          entries.push({ word: w, isStart: i === 0 });
-        });
-      });
-
-      var wall = document.getElementById('wall');
-      var html = '';
-      for (var i = 0; i < 1600; i++) {
-        var e = entries[i % entries.length];
-        var r = Math.random();
-        var size;
-        if (r < 0.08) size = 30;
-        else if (r < 0.16) size = 13;
-        else if (r < 0.30) size = 22;
-        else size = 17;
-        html += '<span class="word" style="font-size:' + size + 'px">' + e.word.split('').map(function (c, idx) {
-          if (idx === 0 && e.isStart) return '<span class="ch first">' + c.toUpperCase() + '</span>';
-          return '<span class="ch">' + c + '</span>';
-        }).join('') + '</span>';
-      }
-      wall.innerHTML = html;
-
-      function rowTops(words) {
-        var tops = [];
-        for (var j = 0; j < words.length; j++) {
-          var t = words[j].offsetTop;
-          if (tops.indexOf(t) === -1) tops.push(t);
-        }
-        return tops;
-      }
-      function makeLink(text, href) {
-        var a = document.createElement('a');
-        a.className = 'word link';
-        a.href = href;
-        a.target = '_blank';
-        a.rel = 'noopener';
-        a.innerHTML = text.split('').map(function (c) {
-          return '<span class="ch">' + c + '</span>';
-        }).join('');
-        return a;
-      }
-
-      var words1 = wall.querySelectorAll('.word');
-      var tops1 = rowTops(words1);
-      var fourthTop = tops1[Math.min(3, tops1.length - 1)];
-      var steamIdx = 0;
-      for (var s = 0; s < words1.length; s++) {
-        if (words1[s].offsetTop === fourthTop) steamIdx = s;
-      }
-      words1[steamIdx].parentNode.replaceChild(makeLink('steam', 'https://steamcommunity.com/id/suilx/'), words1[steamIdx]);
-
-      var words2 = wall.querySelectorAll('.word');
-      var tops2 = rowTops(words2);
-      var fifthLastTop = tops2[Math.max(0, tops2.length - 5)];
-      var neteaseIdx = -1;
-      var count = 0;
-      for (var n = 0; n < words2.length; n++) {
-        if (words2[n].offsetTop === fifthLastTop) {
-          count++;
-          if (count === 3) { neteaseIdx = n; break; }
-        }
-      }
-      if (neteaseIdx >= 0) {
-        words2[neteaseIdx].parentNode.replaceChild(makeLink('netease', 'https://music.163.com/#/user/home?id=287888230'), words2[neteaseIdx]);
-      }
-
-      var wordEls = wall.querySelectorAll('.word:not(.link)');
-
-      function randLetter() {
-        var a = 'abcdefghijklmnopqrstuvwxyz';
-        return a[Math.floor(Math.random() * 26)];
-      }
-      function spin(wordEl) {
-        var chs = wordEl.querySelectorAll('.ch');
-        var originals = [];
-        for (var ci = 0; ci < chs.length; ci++) originals.push(chs[ci].textContent);
-        var stagger = 110, rollFrames = 8, frameMs = 55;
-        var startAt = performance.now();
-        function tick(now) {
-          var elapsed = now - startAt;
-          var anyLeft = false;
-          for (var i = 0; i < chs.length; i++) {
-            var ch = chs[i];
-            var t0 = i * stagger, t1 = t0 + rollFrames * frameMs;
-            if (elapsed < t0) { anyLeft = true; continue; }
-            if (elapsed < t1) {
-              var f = Math.floor((elapsed - t0) / frameMs);
-              if (f !== (ch._f || -1)) {
-                ch._f = f;
-                ch.textContent = ch.classList.contains('first') ? randLetter().toUpperCase() : randLetter();
-              }
-              ch.classList.add('rolling');
-              anyLeft = true;
-            } else if (!ch._done) {
-              ch._done = true;
-              ch.textContent = originals[i];
-              ch.classList.remove('rolling');
-            }
-          }
-          if (anyLeft) requestAnimationFrame(tick);
-        }
-        for (var c2 = 0; c2 < chs.length; c2++) { chs[c2]._f = -1; chs[c2]._done = false; }
-        requestAnimationFrame(tick);
-      }
-
-      // 鼠标划过单词 → 字符波浪式弹跳（平滑位移，避免随机字母滚动的鬼畜感）
-      function hop(wordEl) {
-        var chs = wordEl.querySelectorAll('.ch');
-        for (var i = 0; i < chs.length; i++) {
-          (function (ch, i) {
-            var delay = i * 46;
-            setTimeout(function () {
-              ch.style.transition = 'transform .2s cubic-bezier(.3,.7,.4,1)';
-              ch.style.transform = 'translateY(-0.16em)';
-            }, delay);
-            setTimeout(function () {
-              ch.style.transition = 'transform .45s cubic-bezier(.34,1.56,.64,1)';
-              ch.style.transform = 'translateY(0)';
-            }, delay + 190);
-          })(chs[i], i);
-        }
-      }
-      for (var h = 0; h < wordEls.length; h++) {
-        wordEls[h].addEventListener('mouseenter', function () {
-          hop(this);
-        });
-      }
-
       var btn = document.getElementById('crossBtn');
       var audio = document.getElementById('music');
-      var box = document.getElementById('wall');
-      var mask = document.getElementById('mask');
-      var spinTimer = null;
+      var songTitle = document.getElementById('songTitle');
+      var songTitleStatus = document.getElementById('songTitleStatus');
+      var songBtns = Array.from(document.querySelectorAll('[data-song]'));
+      var trackTitles = [];
+      songBtns.forEach(function (button) {
+        trackTitles[Number(button.dataset.song)] = button.textContent.replace(/\s*\([^)]*\)/g, '').trim();
+      });
+      var useOriginalReel = new URLSearchParams(location.search).has('original');
+      if (!useOriginalReel) document.getElementById('heroCopy').append(document.getElementById('lyrics'));
       var lyricsBody = document.getElementById('lyricsBody');
       var lyricsLine = document.getElementById('lyricsLine');
       var lyricsPhoto = document.getElementById('lyricsPhoto');
@@ -1874,6 +1711,10 @@
         r.setProperty('--ink', c.ink);
         r.setProperty('--shade', c.shade);
         r.setProperty('--panel', c.panel);
+        if (stage && seamProgress >= 0) {
+          seamColor = getComputedStyle(scripture).getPropertyValue('--reading-paper').trim();
+        }
+        if (stage) onScroll();
       }
 
       function escapeHtml(s) {
@@ -1987,14 +1828,43 @@
         }
         activeHalftone = halftones[i];
         dimFactor = parseFloat(activeHalftone.getAttribute('data-dim') || '1');
+        if (stage) onScroll();
       }
 
       function renderTrack(i) {
         currentLine = -1;
         clearSlots();
         applySongTheme(i);
-        switchHalftone(i);
+        if (useOriginalReel) switchHalftone(i);
         if (audio && tracks[i]) audio.src = tracks[i].file;
+      }
+
+      function showSongTitle() {
+        var title = trackTitles[current];
+        if (!title || title === songTitleStatus.textContent) return;
+        var letters = document.createDocumentFragment();
+        var letterIndex = 0;
+        title.split(/\s+/).forEach(function (word, index) {
+          if (index) letters.append(' ');
+          var wordElement = document.createElement('span');
+          wordElement.className = 'song-title-word';
+          for (var character of word) {
+            var letter = document.createElement('span');
+            letter.className = 'song-title-letter';
+            letter.style.animationDelay = (letterIndex++ * 62) + 'ms';
+            var ink = document.createElement('span');
+            ink.textContent = character;
+            letter.append(ink);
+            wordElement.append(letter);
+          }
+          letters.append(wordElement);
+        });
+        songTitle.replaceChildren(letters);
+        songTitleStatus.textContent = title;
+      }
+
+      function startPlayback() {
+        audio.play().catch(function () {});
       }
 
       audio.addEventListener('timeupdate', function () {
@@ -2014,9 +1884,8 @@
 
       audio.addEventListener('ended', function () {
         current = (current + 1) % tracks.length;
-        audio.src = tracks[current].file;
         renderTrack(current);
-        audio.play();
+        startPlayback();
       });
 
       var halftones = document.querySelectorAll('.scripture-halftone');
@@ -2025,22 +1894,16 @@
 
       renderTrack(0);
 
+      audio.addEventListener('playing', showSongTitle);
+      audio.addEventListener('play', function () {
+        btn.setAttribute('aria-pressed', 'true');
+      });
+      audio.addEventListener('pause', function () {
+        btn.setAttribute('aria-pressed', 'false');
+      });
       btn.addEventListener('click', function () {
-        if (audio.paused) {
-          audio.play();
-          box.classList.add('on');
-          mask.classList.add('on');
-          btn.classList.add('playing');
-          spinTimer = setInterval(function () {
-            spin(wordEls[Math.floor(Math.random() * wordEls.length)]);
-          }, 2600);
-        } else {
-          audio.pause();
-          box.classList.remove('on');
-          mask.classList.remove('on');
-          btn.classList.remove('playing');
-          clearInterval(spinTimer);
-        }
+        if (audio.paused) startPlayback();
+        else audio.pause();
       });
 
       // ===== 抽屉式下滑：rAF 驱动，GPU 合成层 =====
@@ -2050,7 +1913,6 @@
       var readingTail = document.getElementById('readingTail');
       var thirdPage = document.getElementById('thirdPage');
       var originalReel = document.getElementById('originalReel');
-      var useOriginalReel = new URLSearchParams(location.search).has('original');
       document.documentElement.classList.toggle('chapter-snap', !useOriginalReel);
       if (useOriginalReel) {
         document.body.classList.add('original-reel');
@@ -2069,13 +1931,13 @@
       var introHeight = 0;
       var thirdStart = 0;
       var viewportHeight = 1;
-      var lastIntroY = -1;
-      var seamMask = document.getElementById('readingPixels');
-      var seamTiles = [];
-      var seamBase = '';
+      var seamCanvas = document.getElementById('readingPixels');
+      var seamInk = useOriginalReel ? null : seamCanvas.getContext('2d');
+      var seamRows = [];
+      var seamSize = 0;
       var seamProgress = -1;
-      var seamFrame = 0;
-      var seamPaintTime = -Infinity;
+      var seamTimer = 0;
+      var seamColor;
       var seamMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
       function seamNoise(column, row) {
@@ -2084,14 +1946,19 @@
         return ((hash ^ (hash >>> 15)) >>> 0) / 4294967296;
       }
 
-      function measureSeam(width, height, depth) {
+      function measureSeam(width, depth) {
+        if (seamSize && seamCanvas.width === width && seamCanvas.height === depth) return;
         var size = Math.max(5, Math.min(9, Math.round(width / 172)));
-        var top = height - depth;
         var rows = Math.ceil(depth / size);
         var columns = Math.ceil(width / size);
-        seamBase = 'M0 0H' + width + 'V' + top + 'H0Z';
-        seamTiles = [];
+        seamCanvas.width = width;
+        seamCanvas.height = depth;
+        seamCanvas.style.height = depth + 'px';
+        scripture.style.setProperty('--reading-pixel-depth', depth + 'px');
+        seamSize = size;
+        seamRows = [];
         for (var row = 0; row < rows; row++) {
+          var tiles = [];
           for (var column = 0; column < columns; column++) {
             var blockX = Math.floor(column / 4);
             var blockY = Math.floor(row / 4);
@@ -2099,46 +1966,65 @@
             var grain = seamNoise(column, row);
             var field = 0.88 - (row + 0.5) / rows
               + (group - 0.5) * 0.46 + (grain - 0.5) * 0.36;
-            seamTiles.push({
+            tiles.push({
               field: field,
               phase: group * Math.PI * 2 + blockX * 0.31,
-              speed: 0.0016 + grain * 0.0019,
-              path: 'M' + column * size + ' ' + (top + row * size) + 'h' + size + 'v' + size + 'h-' + size + 'Z'
+              speed: 0.0016 + grain * 0.0019
             });
           }
+          seamRows.push(tiles);
         }
       }
 
       function paintSeam(time) {
         var threshold = seamProgress * 1.16;
-        var shape = [seamBase];
-        seamTiles.forEach(function (tile) {
-          var pulse = seamMotion.matches ? 0 : Math.sin(time * tile.speed + tile.phase) * 0.12;
-          if (tile.field + pulse > threshold) shape.push(tile.path);
+        var reduced = seamMotion.matches;
+        seamInk.clearRect(0, 0, seamCanvas.width, seamCanvas.height);
+        seamInk.fillStyle = seamColor;
+        seamRows.forEach(function (tiles, row) {
+          var start = -1;
+          for (var column = 0; column <= tiles.length; column++) {
+            var tile = tiles[column];
+            var delta = tile ? tile.field - threshold : -1;
+            var filled = delta > 0.12 || (delta > -0.12 &&
+              delta + (reduced ? 0 : Math.sin(time * tile.speed + tile.phase) * 0.12) > 0);
+            if (filled) {
+              if (start < 0) start = column;
+            } else if (start >= 0) {
+              seamInk.fillRect(start * seamSize, row * seamSize, (column - start) * seamSize, seamSize);
+              start = -1;
+            }
+          }
         });
-        seamMask.setAttribute('d', shape.join(''));
       }
 
-      function animateSeam(time) {
-        seamFrame = 0;
+      function animateSeam() {
+        seamTimer = 0;
         if (seamProgress < 0 || seamMotion.matches) return;
-        if (time - seamPaintTime >= 86) {
-          paintSeam(time);
-          seamPaintTime = time;
-        }
-        seamFrame = requestAnimationFrame(animateSeam);
+        paintSeam(performance.now());
+        seamTimer = setTimeout(animateSeam, 86);
       }
 
       function drawSeam(y) {
-        var active = y > thirdStart - viewportHeight && y < thirdStart;
-        scripture.classList.toggle('pixel-exit', active);
+        var active = seamInk && y > thirdStart - viewportHeight && y < thirdStart;
         if (!active) {
+          if (seamProgress < 0) return;
+          scripture.classList.remove('pixel-exit');
+          seamCanvas.hidden = true;
           seamProgress = -1;
+          clearTimeout(seamTimer);
+          seamTimer = 0;
           return;
+        }
+        if (seamProgress < 0) {
+          seamColor = getComputedStyle(scripture).getPropertyValue('--reading-paper').trim();
+          scripture.classList.add('pixel-exit');
+          seamCanvas.hidden = false;
         }
         seamProgress = Math.max(0, 1 - (thirdStart - y) / (viewportHeight * 0.72));
         paintSeam(performance.now());
-        if (!seamMotion.matches && !seamFrame) seamFrame = requestAnimationFrame(animateSeam);
+        clearTimeout(seamTimer);
+        seamTimer = seamMotion.matches ? 0 : setTimeout(animateSeam, 86);
       }
 
       function measure() {
@@ -2148,11 +2034,11 @@
         introHeight = vh + sh;
         var overlap = readingTail.offsetHeight;
         thirdStart = introHeight - overlap;
-        lastIntroY = -1;
         if (!useOriginalReel) {
-          measureSeam(scripture.clientWidth, sh, overlap);
+          if (seamInk) measureSeam(scripture.clientWidth, overlap);
           introSpacer.style.height = thirdStart + 'px';
-          introSpacer.style.setProperty('--reading-start', vh + 'px');
+          document.body.style.setProperty('--reading-start', vh + 'px');
+          document.body.style.setProperty('--cross-reach', (thirdStart - vh) + 'px');
           onScroll();
           return;
         }
@@ -2165,22 +2051,26 @@
         ticking = false;
         var y = window.scrollY || window.pageYOffset;
         var vh = viewportHeight;
+        var stageInactive = y >= (useOriginalReel ? vh * 0.62 : thirdStart);
+        if (stage.inert !== stageInactive) stage.inert = stageInactive;
         if (!useOriginalReel) {
           var thirdAtTop = y >= thirdStart - 1;
           document.body.classList.toggle('reel-at-top', thirdAtTop);
           drawSeam(y);
-          y = Math.min(y, thirdStart);
-          if (y === lastIntroY) return;
-          lastIntroY = y;
-          stage.inert = y >= vh * 0.62;
-          scripture.inert = y < vh * 0.25 || y >= thirdStart;
+          var scriptureInactive = y < vh * 0.25 || y >= thirdStart;
+          if (scripture.inert !== scriptureInactive) scripture.inert = scriptureInactive;
+          scripture.classList.toggle('visible', y > vh * 0.45);
+          return;
         }
         var sp = Math.max(0, Math.min(1, y / vh)); // stage 淡出进度，1 屏内完成
+        document.body.classList.toggle('hero-past', sp > 0.23);
         stage.style.opacity = Math.max(0, 1 - sp / 0.6).toFixed(3);
         stage.style.transform = 'translateY(' + (sp * 50).toFixed(2) + '%)';
         // scripture：从视口下方滑入（+vh），随后继续上移（负值）露出底部内容
-        scripture.style.transform = 'translateY(' + (vh - y).toFixed(2) + 'px)';
-        if (useOriginalReel) updateOriginalReel(y, vh);
+        if (useOriginalReel) {
+          scripture.style.transform = 'translateY(' + (vh - y).toFixed(2) + 'px)';
+          updateOriginalReel(y, vh);
+        }
         scripture.classList.toggle('visible', y > vh * 0.45);
         var fade = Math.max(0, Math.min(1, (sp - 0.2) / 0.5));
         activeHalftone.style.opacity = (fade * dimFactor).toFixed(3);
@@ -2294,8 +2184,12 @@
           requestAnimationFrame(scrollStep);
         }
       }
-      window.addEventListener('wheel', function (e) {
-        var openOverlay = document.querySelector('.drawer.open, .sidebar.open, .guestbook-stage.open, .video-stage.open');
+      var wheelOverlays = Array.from(document.querySelectorAll('.drawer, .sidebar, .guestbook-stage, .video-stage'));
+      function isWheelOverlayOpen() {
+        return wheelOverlays.some(function (panel) { return panel.classList.contains('open'); });
+      }
+      function handleWheel(e) {
+        var openOverlay = isWheelOverlayOpen();
         if (openOverlay) {
           e.preventDefault();
           var scroller = e.target && e.target.closest ? e.target.closest('.drawer, .guestbook-panel, .sidebar-body, .side-nav') : null;
@@ -2339,7 +2233,19 @@
           scrollTarget = Math.max(p3, Math.min(maxScroll(), next3));
           startLerp();
         }
-      }, { passive: false });
+      }
+      if (useOriginalReel) {
+        window.addEventListener('wheel', handleWheel, { passive: false });
+      } else {
+        // Leave the normal page on the compositor's native wheel path.
+        var watchWheelOverlays = new MutationObserver(function () {
+          if (isWheelOverlayOpen()) window.addEventListener('wheel', handleWheel, { passive: false });
+          else window.removeEventListener('wheel', handleWheel);
+        });
+        wheelOverlays.forEach(function (panel) {
+          watchWheelOverlays.observe(panel, { attributes: true, attributeFilter: ['class'] });
+        });
+      }
 
       window.addEventListener('scroll', onScroll, { passive: true });
       window.addEventListener('resize', measure);
@@ -2657,44 +2563,16 @@
         if (e.target === guestbookStage) closeGuestbook();
       });
 
-      // 音乐（John）
-      var johnSongs = [
-        { artist: 'Chara', title: 'Violet Blue', file: 'john-music/chara_violet_blue.mp3' },
-        { artist: 'Costanza Francavilla', title: 'Burqa', file: 'john-music/burqa_costanza.mp3' },
-        { artist: 'Tori Kelly, GHOST', title: 'Control (Tiny Desk Version)', file: 'john-music/tori_kelly_control.mp3' },
-        { artist: 'paris match', title: 'STAY WITH ME', file: 'john-music/paris_match_stay_with_me.mp3' },
-        { artist: "she's green", title: 'smile again', file: 'john-music/shes_green_smile_again.mp3' },
-        { artist: '林忆莲', title: 'Pieces Of Mind', file: 'john-music/lin_yilian_pieces_of_mind.mp3' },
-        { artist: 'FreeTEMPO', title: 'Love affair', file: 'john-music/freetempo_love_affair.mp3' }
-      ];
-      var songBtns = document.querySelectorAll('[data-song]');
-      for (var si = 0; si < songBtns.length; si++) {
-        (function (btn) {
-          btn.addEventListener('click', function () {
-            var idx = parseInt(btn.getAttribute('data-song'), 10);
-            playJohnSong(johnSongs[idx].file);
-          });
-        })(songBtns[si]);
-      }
-      function playJohnSong(file) {
-        var idx = -1;
-        for (var i = 0; i < tracks.length; i++) {
-          if (tracks[i].file === file) { idx = i; break; }
-        }
-        if (idx < 0) return;
-        current = idx;
-        audio.src = file;
-        renderTrack(current);
-        audio.play();
-        box.classList.add('on');
-        mask.classList.add('on');
-        btn.classList.add('playing');
-        if (spinTimer) clearInterval(spinTimer);
-        spinTimer = setInterval(function () {
-          spin(wordEls[Math.floor(Math.random() * wordEls.length)]);
-        }, 2600);
-        sidebar.classList.remove('open');
-      }
+      songBtns.forEach(function (button) {
+        button.addEventListener('click', function () {
+          var index = Number(button.dataset.song);
+          if (!tracks[index]) return;
+          current = index;
+          renderTrack(current);
+          startPlayback();
+          closeSidebar();
+        });
+      });
       // ===== RUNNER GAME: cross dodges spires & moons =====
       (function () {
         var gameSection = document.getElementById('game');
@@ -2879,10 +2757,11 @@
     })();
   </script>
 
+  <script type="module" src="./hero-cross.js?v=5"></script>
   <script type="module">
     const host = document.querySelector('#thirdPage');
     if (!host.hidden) {
-      import('./reel-preview/reel.js?v=3')
+      import('./reel-preview/reel.js?v=4')
         .then(({ embedReel }) => embedReel(host))
         .catch(() => { /* The direct link is available when embedding fails. */ });
     }

@@ -85,8 +85,9 @@ function mountReel(root, embedded = false) {
   let artwork;
   let artworkRequest = 0;
   let artworkKey;
-  let crossBounds;
+  let stemBounds;
   let lastAperture;
+  let lastShowStem;
   let lastScreenTravel;
   let lastMotion;
   let lastYaw;
@@ -435,6 +436,7 @@ function mountReel(root, embedded = false) {
     artwork?.close();
     artwork = undefined;
     scriptureFallback.style.display = "";
+    scriptureCross.style.display = "";
 
     const pixelWidth = Math.round(width * density);
     const pixelHeight = Math.round(height * density);
@@ -452,7 +454,20 @@ function mountReel(root, embedded = false) {
         copy.style.setProperty(property, style.getPropertyValue(property));
       }
     }
-    source.append(defs, paper);
+    const cross = scriptureCross.cloneNode(true);
+    const crossStyle = getComputedStyle(scriptureCross);
+    for (const property of ["font-family", "font-weight", "fill", "text-anchor", "stroke", "stroke-width", "paint-order"]) {
+      cross.style.setProperty(property, crossStyle.getPropertyValue(property));
+    }
+    const mono = scriptureCross.querySelector(".scripture-shard-mono");
+    if (mono) {
+      const monoStyle = getComputedStyle(mono);
+      for (const line of cross.querySelectorAll(".scripture-shard-mono")) {
+        line.style.fontFamily = monoStyle.fontFamily;
+        line.style.fontWeight = monoStyle.fontWeight;
+      }
+    }
+    source.append(defs, paper, cross);
     const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(source)], { type: "image/svg+xml" }));
 
     try {
@@ -465,9 +480,9 @@ function mountReel(root, embedded = false) {
       const plate = document.createElement("canvas");
       plate.width = pixelWidth;
       plate.height = pixelHeight;
-      const ink = plate.getContext("2d", { willReadFrequently: true });
+      const ink = plate.getContext("2d");
       ink.drawImage(image, 0, 0);
-      const bitmap = await createImageBitmap(ink.getImageData(0, 0, pixelWidth, pixelHeight));
+      const bitmap = await createImageBitmap(plate);
       if (request !== artworkRequest) {
         bitmap.close();
         return;
@@ -477,6 +492,7 @@ function mountReel(root, embedded = false) {
       scriptureInk.setTransform(pixelWidth / width, 0, 0, pixelHeight / height, 0, 0);
       artwork = bitmap;
       scriptureFallback.style.display = "none";
+      scriptureCross.style.display = "none";
       lastAperture = undefined;
       scheduleDraw();
     } catch {
@@ -486,22 +502,24 @@ function mountReel(root, embedded = false) {
     }
   }
 
-  function drawTileWave(progress) {
-    if (progress === lastAperture) return;
+  function drawTileWave(progress, showStem) {
+    if (progress === lastAperture && showStem === lastShowStem) return;
     lastAperture = progress;
-    scriptureArt.style.visibility = progress >= 1 ? "hidden" : "visible";
+    lastShowStem = showStem;
+    scriptureArt.style.visibility = progress >= 1 || (artwork && !showStem) ? "hidden" : "visible";
     scriptureFrame.hidden = !artwork || progress >= 1;
     if (progress >= 1) return;
 
     if (artwork) {
       drawCanvasTiles(progress);
+      if (!showStem) return;
     }
     const cover = [`M0 0H${width}V${height}H0Z`];
     const front = [];
     const back = [];
     for (const tile of progress > 0 ? tiles : []) {
-      if (artwork && (tile.x + tile.width <= crossBounds.left || tile.x >= crossBounds.right
-        || tile.y + tile.height <= crossBounds.top || tile.y >= crossBounds.bottom)) continue;
+      if (artwork && (tile.x + tile.width <= stemBounds.left || tile.x >= stemBounds.right
+        || tile.y + tile.height <= stemBounds.top || tile.y >= stemBounds.bottom)) continue;
       const turn = (progress - tile.time) / tileTurnLength;
       if (turn <= 0) continue;
       const { x, y, width: w, height: h, horizontal } = tile;
@@ -523,7 +541,7 @@ function mountReel(root, embedded = false) {
         if (!artwork && face < 0.88) back.push(facePath);
       }
     }
-    // The same cutouts expose the reel and clip the introductory lettering.
+    // The closing stem still uses the same cutouts as the painted artwork.
     tileCover.setAttribute("d", cover.join(""));
     tileFront.setAttribute("d", front.join(""));
     tileBack.setAttribute("d", back.join(""));
@@ -533,6 +551,7 @@ function mountReel(root, embedded = false) {
     scriptureInk.drawImage(artwork, 0, 0, width, height);
     if (progress <= 0) return;
 
+    const cutouts = new Path2D();
     const front = new Path2D();
     const back = new Path2D();
     let run;
@@ -545,7 +564,7 @@ function mountReel(root, embedded = false) {
         continue;
       }
       if (run) {
-        scriptureInk.clearRect(run.left, run.y, run.right - run.left, run.height);
+        cutouts.rect(run.left, run.y, run.right - run.left, run.height);
         run = undefined;
       }
       if (turn <= 0) continue;
@@ -561,11 +580,15 @@ function mountReel(root, embedded = false) {
       const top = y + Math.floor((h - faceHeight) / 2);
       if (turn < 0.5) front.rect(left, top, faceWidth, faceHeight);
       else {
-        scriptureInk.clearRect(left, top, faceWidth, faceHeight);
+        cutouts.rect(left, top, faceWidth, faceHeight);
         if (face < 0.88) back.rect(left, top, faceWidth, faceHeight);
       }
     }
-    if (run) scriptureInk.clearRect(run.left, run.y, run.right - run.left, run.height);
+    if (run) cutouts.rect(run.left, run.y, run.right - run.left, run.height);
+    scriptureInk.globalCompositeOperation = "destination-out";
+    scriptureInk.fillStyle = "#000";
+    scriptureInk.fill(cutouts);
+    scriptureInk.globalCompositeOperation = "source-over";
     scriptureInk.fillStyle = "rgb(44 40 37 / 18%)";
     scriptureInk.fill(front);
     scriptureInk.fillStyle = "rgb(0 0 0 / 12%)";
@@ -651,8 +674,9 @@ function mountReel(root, embedded = false) {
     const close = smooth(coda);
     const opening = reduced ? Number(open > 0.5) : open;
     const aperture = opening * (1 - (reduced ? Number(close > 0.5) : close));
-    drawTileWave(aperture);
-    if (embedded) codaStem.style.opacity = String(smooth((close - 0.48) / 0.49));
+    const stemOpacity = embedded ? smooth((close - 0.48) / 0.49) : 0;
+    drawTileWave(aperture, stemOpacity > 0);
+    if (embedded) codaStem.style.opacity = String(stemOpacity);
 
     const position = (screenTravel - firstChapter) / chapterTravel;
     const selected = clamp(Math.round(position), 0, cards.length - 1);
@@ -715,13 +739,12 @@ function mountReel(root, embedded = false) {
     if (embedded) measureEpilogue(cross);
     else if (!groundType.hasChildNodes()) buildGroundType();
     const stageRect = stage.getBoundingClientRect();
-    const crossRect = scriptureCross.getBoundingClientRect();
     const stemRect = codaStem.getBoundingClientRect();
-    crossBounds = {
-      left: (embedded ? Math.min(crossRect.left, stemRect.left) : crossRect.left) - stageRect.left - 2,
-      right: crossRect.right - stageRect.left + 2,
-      top: crossRect.top - stageRect.top - 2,
-      bottom: (embedded ? Math.max(crossRect.bottom, stemRect.bottom) : crossRect.bottom) - stageRect.top + 2
+    stemBounds = {
+      left: stemRect.left - stageRect.left - 2,
+      right: stemRect.right - stageRect.left + 2,
+      top: stemRect.top - stageRect.top - 2,
+      bottom: stemRect.bottom - stageRect.top + 2
     };
     lastAperture = lastYaw = undefined;
     prepareArtwork(density);
