@@ -2,8 +2,6 @@ function mountReel(root, embedded = false) {
   const reel = root.querySelector("#reel");
   const stage = root.querySelector("#stage");
   const chapterCount = 14;
-  const chapterNav = root.querySelector("#chapter-nav");
-  const chapterPicker = root.querySelector("#chapter-picker");
   const cardTemplate = root.querySelector("#reel-card");
   const lanes = root.querySelectorAll(".card-lane");
   const clips = [
@@ -12,8 +10,6 @@ function mountReel(root, embedded = false) {
     { name: "The Deep", file: "deep" }
   ];
   const formatNumber = (value) => String(value).padStart(2, "0");
-  const totalLabel = formatNumber(chapterCount);
-  const chapterButtons = [];
   const cards = Array.from({ length: chapterCount }, (_, index) => {
     const number = formatNumber(index + 1);
     const clip = clips[index % clips.length];
@@ -26,17 +22,6 @@ function mountReel(root, embedded = false) {
     video.dataset.src = new URL(`media/${clip.file}.mp4`, import.meta.url).href;
     lanes[index % lanes.length].append(card);
 
-    const button = document.createElement("button");
-    button.type = "button";
-    button.dataset.stop = String(index + 1);
-    button.textContent = number;
-    button.setAttribute("aria-label", card.getAttribute("aria-label"));
-    chapterNav.append(button);
-    chapterButtons.push(button);
-    const option = document.createElement("option");
-    option.value = String(index + 1);
-    option.textContent = chapterName;
-    chapterPicker.append(option);
     return card;
   });
   const videos = cards.map((card) => card.querySelector("video"));
@@ -46,7 +31,6 @@ function mountReel(root, embedded = false) {
     card.style.setProperty("--card-scale", scale.toFixed(3));
     return { driftX: layoutNoise() * 2 - 1, driftY: layoutNoise() * 2 - 1, x: 0, y: 0, edge: 0 };
   });
-  root.querySelector("#plate-range").textContent = `FIG. 01–${totalLabel}`;
   const scriptureArt = root.querySelector("#scripture-art");
   const scriptureFallback = root.querySelector("#scripture-fallback");
   const scriptureFrame = root.querySelector("#scripture-frame");
@@ -58,8 +42,6 @@ function mountReel(root, embedded = false) {
   const dotInk = dots.getContext("2d");
   const verses = root.querySelector("#verses");
   const frontVerses = root.querySelector("#verses-front");
-  const gate = root.querySelector("#gate");
-  const finale = root.querySelector("#finale");
   const scriptureCross = root.querySelector("#scripture-cross");
   const codaStem = root.querySelector("#coda-stem");
   const groundType = root.querySelector("#ground-type");
@@ -69,7 +51,6 @@ function mountReel(root, embedded = false) {
   const groundFoot = epilogue.querySelector("#ground-foot");
   const epilogueStem = epilogue.querySelector("#epilogue-stem");
   const readMore = root.querySelector(".reel-read-more");
-  const pauseButton = root.querySelector("#pause");
   const motionPreference = matchMedia("(prefers-reduced-motion: reduce)");
   const revealEnd = 0.94;
   const cardEntry = 0.55;
@@ -115,7 +96,6 @@ function mountReel(root, embedded = false) {
   let frame = 0;
   let chapter = -1;
   let playing = -1;
-  let paused = motionPreference.matches;
 
   const clamp = (value, low = 0, high = 1) => Math.min(high, Math.max(low, value));
   const smooth = (value) => {
@@ -180,7 +160,7 @@ function mountReel(root, embedded = false) {
   });
 
   function updatePlayback() {
-    const next = paused || document.hidden ? -1 : chapter;
+    const next = motionPreference.matches || document.hidden ? -1 : chapter;
     if (next === playing) return;
     if (playing >= 0) videos[playing].pause();
     playing = next;
@@ -196,11 +176,6 @@ function mountReel(root, embedded = false) {
   function selectChapter(next) {
     if (chapter === next) return;
     chapter = next;
-    chapterButtons.forEach((button, index) => {
-      if (index === chapter) button.setAttribute("aria-current", "step");
-      else button.removeAttribute("aria-current");
-    });
-    chapterPicker.value = String(chapter + 1);
     updatePlayback();
   }
 
@@ -688,14 +663,9 @@ function mountReel(root, embedded = false) {
     const aperture = opening * (1 - (reduced ? Number(close > 0.5) : close));
     drawTileWave(aperture);
     if (embedded) codaStem.style.opacity = String(smooth((close - 0.48) / 0.49));
-    stage.classList.toggle("is-prologue", screenTravel < cardEntry);
-    stage.classList.toggle("is-closed", embedded && coda >= 1);
 
     const position = (screenTravel - firstChapter) / chapterTravel;
     const selected = clamp(Math.round(position), 0, cards.length - 1);
-    const label = reduced ? Number(close > 0.5) : smooth((coda - 0.68) / 0.28);
-    stage.style.setProperty("--coda-label", String(label));
-    finale.setAttribute("aria-hidden", String(label < 0.6));
 
     const viewPosition = reduced ? selected : position;
     const turnPosition = coda ? chapterCount - 1 + (reduced ? Number(close > 0.5) : coda)
@@ -720,7 +690,6 @@ function mountReel(root, embedded = false) {
       drawDots(yaw, reduced);
       drawVerses(yaw, reduced);
     }
-    gate.hidden = screenTravel > 0.22;
   }
 
   function scheduleDraw() {
@@ -774,38 +743,12 @@ function mountReel(root, embedded = false) {
     scheduleDraw();
   }
 
-  function scrollToScreen(screen) {
-    const origin = embedded ? window.scrollY + reel.getBoundingClientRect().top : 0;
-    window.scrollTo({ top: Math.ceil(origin + screen * height), behavior: motionPreference.matches ? "instant" : "smooth" });
-  }
-
-  function jump(stop) {
-    if (stop === 0) stage.focus({ preventScroll: true });
-    scrollToScreen(stop === 0 ? 0 : firstChapter + (stop - 1) * chapterTravel);
-  }
-
-  function setPaused(value) {
-    paused = value;
-    pauseButton.setAttribute("aria-pressed", String(paused));
-    pauseButton.textContent = paused ? "播放影像" : "暂停影像";
-    updatePlayback();
-  }
-
-  root.querySelectorAll("[data-stop]").forEach((button) => {
-    button.addEventListener("click", () => jump(Number(button.dataset.stop)));
-  });
-  gate.addEventListener("click", () => {
-    stage.focus({ preventScroll: true });
-    scrollToScreen(revealEnd);
-  });
   if (embedded) {
     epilogue.hidden = false;
     readMore.addEventListener("click", () => root.host.dispatchEvent(new Event("reel-read-more")));
   }
-  chapterPicker.addEventListener("change", () => jump(Number(chapterPicker.value)));
-  pauseButton.addEventListener("click", () => setPaused(!paused));
   motionPreference.addEventListener("change", () => {
-    setPaused(motionPreference.matches);
+    updatePlayback();
     scheduleDraw();
   });
   document.addEventListener("visibilitychange", updatePlayback);
@@ -814,13 +757,15 @@ function mountReel(root, embedded = false) {
   buildGroundType();
   buildFieldCrosses();
   buildScriptureCross();
-  setPaused(paused);
   measure();
   document.fonts.ready.then(measure);
 }
 
 export async function embedReel(host) {
-  const response = await fetch(new URL("./index.html", import.meta.url));
+  const revision = new URL(import.meta.url).search;
+  const markupUrl = new URL("./index.html", import.meta.url);
+  markupUrl.search = revision;
+  const response = await fetch(markupUrl);
   if (!response.ok) throw new Error("Unable to load the reel.");
   const source = new DOMParser().parseFromString(await response.text(), "text/html");
   const markup = source.querySelector("#reel");
@@ -828,15 +773,13 @@ export async function embedReel(host) {
   const template = source.querySelector("#reel-card");
   if (!markup || !epilogue || !template) throw new Error("The reel is missing its markup.");
 
-  markup.querySelector(".wordmark").href = "#top";
-  markup.querySelector(".masthead h1").textContent = "03 / 03 · 十四幕影像";
-  markup.querySelector(".original").href = new URL("../index.html?original=1#originalVideoStart", import.meta.url).href;
-
   const root = host.attachShadow({ mode: "open" });
   const fallback = document.createElement("slot");
   const stylesheet = document.createElement("link");
   stylesheet.rel = "stylesheet";
-  stylesheet.href = new URL("./reel.css", import.meta.url).href;
+  const stylesheetUrl = new URL("./reel.css", import.meta.url);
+  stylesheetUrl.search = revision;
+  stylesheet.href = stylesheetUrl.href;
   const styled = new Promise((resolve, reject) => {
     stylesheet.onload = resolve;
     stylesheet.onerror = reject;
