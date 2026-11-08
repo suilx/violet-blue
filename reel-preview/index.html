@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#000000">
+  <title>suilx · 十四幕影像试片</title>
+  <link rel="stylesheet" href="../site-palette.css">
+  <link rel="stylesheet" href="reel.css">
+  <link rel="preload" href="fonts/six-caps.woff2" as="font" type="font/woff2" crossorigin>
+  <script src="reel.js" type="module"></script>
+</head>
+<body>
+  <main class="reel" id="reel">
+    <div class="stage is-prologue" id="stage" tabindex="-1">
+      <div class="paper" aria-hidden="true">
+        <canvas id="lens-dots" class="lens-dots"></canvas>
+        <div class="verses" id="verses"></div>
+      </div>
+      <div class="viewport">
+        <div class="card-lane"></div>
+        <div class="card-lane"></div>
+      </div>
+      <div class="verses verses-front" id="verses-front" aria-hidden="true"></div>
+      <section id="finale" class="finale-caption" aria-hidden="true" aria-labelledby="finale-title">
+        <span>XIV / 14 · CODA</span><h2 id="finale-title" lang="en">The Word</h2><span>JOHN 01:01</span>
+      </section>
+      <canvas class="scripture-art" id="scripture-frame" aria-hidden="true" hidden></canvas>
+      <svg class="scripture-art" id="scripture-art" aria-hidden="true">
+        <defs>
+          <clipPath id="unflipped-tiles">
+            <path id="tile-cover" clip-rule="evenodd" d="M0 0H8192V8192H0Z"/>
+          </clipPath>
+          <radialGradient id="paper-light" cx="58%" cy="29%" r="78%">
+            <stop stop-color="#f3f2ed"/>
+            <stop offset="1" stop-color="#d6d4ce"/>
+          </radialGradient>
+          <filter id="paper-grain" x="0" y="0" width="100%" height="100%">
+            <feTurbulence type="fractalNoise" baseFrequency=".65" numOctaves="3" seed="28"/>
+            <feColorMatrix type="saturate" values="0"/>
+          </filter>
+        </defs>
+        <g clip-path="url(#unflipped-tiles)">
+          <g id="scripture-fallback">
+            <rect width="100%" height="100%" fill="url(#paper-light)"/>
+            <rect width="100%" height="100%" filter="url(#paper-grain)" opacity=".22"/>
+            <svg width="100%" height="100%" viewBox="0 0 1536 1024" preserveAspectRatio="xMidYMax slice">
+              <g id="ground-type" class="ground-type"></g>
+              <g id="field-crosses" class="field-crosses"></g>
+            </svg>
+          </g>
+          <g id="scripture-cross" class="scripture-cross"></g>
+          <g id="coda-stem" class="scripture-cross" opacity="0"></g>
+          <path id="tile-front" fill="#2c2825" opacity=".18"/>
+        </g>
+        <path id="tile-back" fill="#000" opacity=".12"/>
+      </svg>
+      <header class="masthead">
+        <a class="wordmark" href="../index.html" aria-label="suilx 首页">suilx</a>
+        <h1>十四幕影像试片</h1>
+        <a class="original" href="../index.html?original=1#originalVideoStart" target="_blank" rel="noopener">鱼眼原版 <span aria-hidden="true">↗</span></a>
+      </header>
+      <div class="plate-label" aria-hidden="true"><span id="plate-range"></span><span>VIOLET BLUE / REEL</span></div>
+      <button class="gate" id="gate" type="button"><span class="gate-name" lang="en">The Word</span><span>向下滚动 · 或点击揭幕 ↓</span></button>
+      <footer class="controls">
+        <button class="plain replay" type="button" data-stop="0" aria-label="回到十字架揭幕">↥ <span>揭幕</span></button>
+        <nav id="chapter-nav" aria-label="试片章节">
+          <select id="chapter-picker" aria-label="跳到章节"><option value="0">选择章节</option></select>
+        </nav>
+        <button class="plain pause" id="pause" type="button" aria-pressed="false">暂停影像</button>
+      </footer>
+    </div>
+  </main>
+  <section class="reel-epilogue" aria-label="影像后记" hidden>
+    <svg class="epilogue-words" aria-hidden="true">
+      <defs>
+        <radialGradient id="epilogue-paper" href="#paper-light" gradientUnits="userSpaceOnUse" cx=".58" cy=".29" r=".78"/>
+        <linearGradient id="epilogue-fade" x2="0" y2="1">
+          <stop stop-color="#efede7" stop-opacity="0"/>
+          <stop offset="1" stop-color="#efede7"/>
+        </linearGradient>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#epilogue-paper)"/>
+      <rect width="100%" height="100%" fill="url(#epilogue-fade)"/>
+      <g id="ground-foot" class="ground-type"></g>
+      <g id="epilogue-stem" class="scripture-cross"></g>
+    </svg>
+    <button class="reel-read-more" type="button">READ MORE</button>
+  </section>
+  <template id="reel-card">
+    <article class="card" aria-hidden="true">
+      <div class="film"><video muted playsinline loop preload="none" aria-hidden="true"></video></div>
+    </article>
+  </template>
+</body>
+</html>

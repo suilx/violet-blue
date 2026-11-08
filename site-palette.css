@@ -1,0 +1,14 @@
+:root {
+  --site-night: #130b0e;
+  --site-ivory: #f2e8dc;
+  --site-ivory-rgb: 242, 232, 220;
+  --site-muted: #bba39f;
+  --site-panel: #291519;
+  --site-glow: #441a23;
+  --site-verse: #36161c;
+  --site-reel: #bd191b;
+  --site-reel-light: #e92b23;
+  --site-reel-edge: #640910;
+  --site-reel-field: radial-gradient(ellipse at 50% 38%, var(--site-reel-light) 14%, var(--site-reel) 53%, var(--site-reel-edge));
+  --site-rule: #f2e8dc33;
+}
