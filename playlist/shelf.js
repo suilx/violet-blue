@@ -1,7 +1,7 @@
 let catalogue;
 
-export async function mountPlaylistShelf(host, back, pauseHome) {
-  catalogue ??= fetch(new URL('tracks.json?v=2', import.meta.url)).then(response => {
+export async function mountPlaylistShelf(host, back, homeMusic) {
+  catalogue ??= fetch(new URL('tracks.json?v=3', import.meta.url)).then(response => {
     if (!response.ok) throw Error('Playlist unavailable');
     return response.json();
   }).catch(error => {
@@ -19,9 +19,15 @@ export async function mountPlaylistShelf(host, back, pauseHome) {
         <div><strong></strong><small></small></div>
         <button type="button" data-step="1" aria-label="Next cover">→</button>
       </div>
+      <p class="cd-home-lyrics" hidden></p>
     </div>
     <div class="cd-player" hidden>
-      <div class="cd-player-title"><p>Selected track</p><h3></h3><small></small></div>
+      <div class="cd-player-title">
+        <p>Selected track</p><h3></h3><small></small>
+        <section class="cd-lyrics" aria-label="Lyrics" hidden>
+          <h4>Lyrics</h4><div class="cd-lyrics-lines" tabindex="0"></div>
+        </section>
+      </div>
       <div class="cd-case cd-player-art"></div>
       <div class="cd-transport"></div>
     </div>`;
@@ -30,6 +36,11 @@ export async function mountPlaylistShelf(host, back, pauseHome) {
   const shelf = host.querySelector('.cd-shelf');
   const title = host.querySelector('.cd-caption strong');
   const meta = host.querySelector('.cd-caption small');
+  const homeLyrics = host.querySelector('.cd-home-lyrics');
+  const trackTitle = player.querySelector('h3');
+  const trackArtist = player.querySelector('small');
+  const lyrics = player.querySelector('.cd-lyrics');
+  const lyricsLines = lyrics.querySelector('.cd-lyrics-lines');
   const transport = host.querySelector('.cd-transport');
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const controller = new AbortController();
@@ -48,11 +59,22 @@ export async function mountPlaylistShelf(host, back, pauseHome) {
   let suppressClick = false;
   let wheelStop;
 
+  function setText(element, value, language) {
+    element.textContent = value;
+    element.lang = language || '';
+  }
+
+  function updateHomeLyrics() {
+    const text = homeMusic.audio.paused ? '' : homeMusic.currentLine();
+    if (homeLyrics.textContent !== text) homeLyrics.textContent = text;
+    homeLyrics.hidden = !text;
+  }
+
   function cover(track) {
     const insert = document.createElement('span');
     insert.className = 'cd-insert';
     const label = document.createElement('span');
-    label.textContent = track.title;
+    setText(label, track.title, track.titleLang);
     const image = document.createElement('img');
     image.alt = '';
     image.hidden = true;
@@ -75,7 +97,7 @@ export async function mountPlaylistShelf(host, back, pauseHome) {
     const spine = button.firstElementChild;
     const face = button.lastElementChild;
     spine.style.setProperty('--cd-inlay', swatches[index % swatches.length]);
-    spine.firstElementChild.textContent = track.title;
+    setText(spine.firstElementChild, track.title, track.titleLang);
     spine.lastElementChild.textContent = String(index + 1).padStart(2, '0');
     const {insert, image} = cover(track);
     face.append(insert);
@@ -104,8 +126,9 @@ export async function mountPlaylistShelf(host, back, pauseHome) {
     button.tabIndex = 0;
     button.classList.add('is-selected');
     button.setAttribute('aria-label', 'Open player for ' + tracks[index].title);
-    title.textContent = tracks[index].title;
-    meta.textContent = tracks[index].artist + ' · ' + String(index + 1).padStart(2, '0') + ' / ' + tracks.length;
+    const track = tracks[index];
+    setText(title, track.title, track.titleLang);
+    setText(meta, track.artist + ' · ' + String(index + 1).padStart(2, '0') + ' / ' + tracks.length, track.artistLang);
   }
 
   function primeCovers(index) {
@@ -211,20 +234,28 @@ export async function mountPlaylistShelf(host, back, pauseHome) {
     const {insert, image} = cover(track);
     if (track.cover) image.src = track.cover;
     player.querySelector('.cd-player-art').replaceChildren(insert);
-    player.querySelector('h3').textContent = track.title;
-    player.querySelector('small').textContent = track.artist;
+    setText(trackTitle, track.title, track.titleLang);
+    setText(trackArtist, track.artist, track.artistLang);
+    const publishedLines = homeMusic.lyricsFor(track.title);
+    lyricsLines.replaceChildren(...publishedLines.map(({text}) => {
+      const line = document.createElement('p');
+      line.textContent = text;
+      return line;
+    }));
+    lyricsLines.scrollTop = 0;
+    lyrics.hidden = !publishedLines.length;
     const external = document.createElement('a');
     external.href = 'https://music.163.com/song?id=' + track.id;
     external.target = '_blank';
     external.rel = 'noopener noreferrer';
-    external.textContent = 'Open in NetEase ↗';
+    external.textContent = publishedLines.length ? 'Open in NetEase ↗' : 'Track & lyrics on NetEase ↗';
     transport.replaceChildren(external);
     if (!track.externalOnly) {
-      pauseHome();
+      homeMusic.audio.pause();
       const embed = document.createElement('iframe');
       embed.title = 'NetEase player for ' + track.title;
       embed.allow = 'encrypted-media';
-      embed.src = 'https://music.163.com/outchain/player?type=2&id=' + track.id + '&auto=0&height=86';
+      embed.src = 'https://music.163.com/outchain/player?type=2&id=' + track.id + '&auto=0&height=32';
       transport.prepend(embed);
     }
     browser.hidden = true;
@@ -312,6 +343,10 @@ export async function mountPlaylistShelf(host, back, pauseHome) {
   const resize = new ResizeObserver(measure);
   resize.observe(shelf);
   measure();
+  for (const name of ['timeupdate', 'playing', 'pause', 'emptied']) {
+    homeMusic.audio.addEventListener(name, updateHomeLyrics, {signal});
+  }
+  updateHomeLyrics();
 
   return () => {
     controller.abort();

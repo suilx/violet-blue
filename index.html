@@ -13,6 +13,11 @@
     src: url("reel-preview/fonts/six-caps.woff2") format("woff2");
     font-display: swap;
   }
+@font-face {
+  font-family: 'Playlist Traditional';
+  src: url('./fonts/playlist-traditional.woff2') format('woff2');
+  font-display: swap;
+}
 @font-face{font-family:'Space Grotesk';src:url(./fonts/space-grotesk.woff2) format('woff2');font-weight:400;font-style:normal;font-display:swap;}
 @font-face{font-family:'Cormorant Garamond';src:url(./fonts/cormorant-garamond-italic.woff2) format('woff2');font-weight:400;font-style:italic;font-display:swap;}
 @font-face{font-family:'Cormorant Garamond';src:url(./fonts/cormorant-garamond.woff2) format('woff2');font-weight:400;font-style:normal;font-display:swap;}
@@ -433,6 +438,7 @@
     transition-delay: .15s, .15s, 0s;
   }
   .stage[data-playlist-open].profile-open .cross { opacity: 0.18; }
+  .stage[data-playlist-open].profile-open .cross > :is(canvas, svg) { pointer-events: auto; }
   .profile-panel.has-playlist-player {
     align-content: start;
     width: min(48vw, 34rem);
@@ -609,7 +615,7 @@
     text-transform: uppercase;
     overflow-wrap: anywhere;
   }
-  .cd-caption small, .cd-player-title :is(p, small), .cd-transport a {
+  .cd-caption small, .cd-player-title > :is(p, small), .cd-transport a {
     display: block;
     margin-top: 6px;
     color: var(--song-muted);
@@ -629,7 +635,38 @@
     padding: 12svh 8vw 8svh;
     color: var(--song-ink);
   }
-  .cd-player-title p { padding-bottom: 10px; border-bottom: 1px solid var(--song-rule); text-transform: uppercase; }
+  .cd-player-title > p { padding-bottom: 10px; border-bottom: 1px solid var(--song-rule); text-transform: uppercase; }
+  .cd-home-lyrics {
+    position: absolute;
+    inset: calc(67% + 92px) 8vw auto;
+    text-align: center;
+    color: var(--song-ink);
+    font: 400 clamp(17px, 2.2vw, 28px)/1.45 var(--serif);
+  }
+  .cd-lyrics {
+    margin-top: clamp(16px, 3svh, 34px);
+    border-top: 1px solid var(--song-rule);
+    padding-top: 10px;
+  }
+  .cd-lyrics h4 {
+    margin-bottom: 8px;
+    color: var(--song-muted);
+    font: 400 10px/1.35 var(--sans);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+  }
+  .cd-lyrics-lines {
+    max-height: clamp(76px, 24svh, 220px);
+    overflow: auto;
+    padding-inline-end: 8px;
+    pointer-events: auto;
+    font: 400 clamp(15px, 1.8vw, 23px)/1.5 var(--serif);
+  }
+  .cd-lyrics-lines p + p { margin-top: .4em; }
+  .cd-lyrics-lines:focus-visible { outline: 1px solid var(--song-accent); }
+  .cd-archive [lang="zh-Hant"] {
+    font-family: 'Playlist Traditional', 'Songti TC', PMingLiU, serif;
+  }
   .cd-player-title h3 {
     margin-top: 12px;
     font: 400 clamp(24px, 4.5vw, 64px)/1.05 var(--serif);
@@ -642,11 +679,17 @@
     padding-top: 8px;
     pointer-events: auto;
   }
-  .cd-transport iframe { width: min(100%, 41rem); height: 106px; }
+  .cd-transport iframe {
+    width: min(100%, 19rem);
+    height: 57px;
+    filter: url('#cd-player-ink');
+  }
+  .cd-player-filter { position: absolute; color: var(--song-ink); pointer-events: none; }
   .cd-transport a { width: fit-content; padding-block: 8px; color: var(--song-ink); text-underline-offset: 3px; }
   @media (max-width: 560px) {
     .cd-shelf { --cd-height: min(29svh, 54vw); inset-block-start: 26%; height: 34%; }
     .cd-caption { inset-block-start: 63%; }
+    .cd-home-lyrics { inset-block-start: calc(63% + 82px); }
     .cd-player { padding: 14svh 6vw 7svh; }
   }
   .stage[data-playlist-open].local-archive.profile-open :is(.profile-panel, .archive-player) {
@@ -702,7 +745,7 @@
     overflow-wrap: anywhere;
   }
   .profile-panel-profile h2[lang="zh-Hant"] {
-    font: 500 clamp(24px, 4.2vw, 62px)/1.15 Georgia, "Noto Serif CJK TC", "Songti TC", serif;
+    font: 500 clamp(24px, 4.2vw, 62px)/1.15 Georgia, 'Playlist Traditional', "Noto Serif CJK TC", "Songti TC", serif;
   }
   .profile-identity { min-width: 0; }
   .profile-title-row { display: flex; align-items: center; gap: clamp(6px, 1vw, 14px); }
@@ -914,7 +957,7 @@
           <div class="lyrics-line" id="lyricsLine"></div>
         </div>
       </div>
-      <nav class="hero-menu" id="heroMenu" aria-label="子菜单" inert>
+      <nav class="hero-menu" id="heroMenu" aria-label="子選單" inert>
         <details name="home-menu">
           <summary>Now</summary>
           <div class="menu-items">
@@ -994,7 +1037,7 @@
       </nav>
     </div>
     <div class="song-title-status" id="songTitleStatus" role="status"></div>
-    <button class="cross" id="crossBtn" aria-label="播放音乐" aria-pressed="false">
+    <button class="cross" id="crossBtn" aria-label="播放音樂" lang="zh-Hant" aria-pressed="false">
       <canvas id="heroCross" aria-hidden="true" hidden></canvas>
       <svg viewBox="0 0 56 82" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <g class="cross-fallback">
@@ -1011,6 +1054,15 @@
         </g>
       </svg>
     </button>
+    <svg class="cd-player-filter" width="0" height="0" aria-hidden="true" focusable="false">
+      <defs>
+        <filter id="cd-player-ink" color-interpolation-filters="sRGB">
+          <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -.2126 -.7152 -.0722 1 0" result="inkMask"/>
+          <feFlood flood-color="currentColor" result="ink"/>
+          <feComposite in="ink" in2="inkMask" operator="in"/>
+        </filter>
+      </defs>
+    </svg>
     <section class="profile-panel" id="socialProfile" aria-labelledby="profileTitle" inert>
       <button class="profile-panel-header" id="profileBack" type="button">
         <span id="profileSection"></span>
@@ -1690,8 +1742,11 @@
         btn.setAttribute('aria-pressed', 'false');
       });
       btn.addEventListener('click', function () {
-        if (audio.paused) startPlayback();
-        else audio.pause();
+        if (audio.paused) {
+          if (playlistPlayer.querySelector('.cd-player:not([hidden])')) profileBack.click();
+          profilePanel.querySelector('.local-listening audio')?.pause();
+          startPlayback();
+        } else audio.pause();
       });
 
       var stage = document.getElementById('stage');
@@ -1784,8 +1839,16 @@
           archive.className = 'cd-archive';
           playlistPlayer.replaceChildren(archive);
           profilePanel.classList.add('has-archive-shelf');
-          import('./playlist/shelf.js?v=2').then(function (module) {
-            return module.mountPlaylistShelf(archive, profileBack, function () { audio.pause(); });
+          import('./playlist/shelf.js?v=3').then(function (module) {
+            return module.mountPlaylistShelf(archive, profileBack, {
+              audio: audio,
+              currentLine: function () { return tracks[current].lyrics[currentLine]?.text || ''; },
+              lyricsFor: function (title) {
+                return tracks.find(function (track) {
+                  return track.title.toLowerCase() === title.toLowerCase();
+                })?.lyrics || [];
+              }
+            });
           }).then(function (dispose) {
             if (archive.isConnected) disposePlaylistShelf = dispose;
             else dispose?.();
