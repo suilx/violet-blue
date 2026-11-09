@@ -450,6 +450,205 @@
     height: 396px;
     border: 0;
   }
+  .profile-panel.has-archive-shelf {
+    inset: 0;
+    width: auto;
+    display: block;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .has-archive-shelf > :is(.profile-panel-header, .profile-panel-profile) {
+    position: absolute;
+    top: 12px;
+    z-index: 2;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    color: var(--song-ink);
+    background: transparent;
+    font: 400 11px/1.3 var(--sans);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    pointer-events: auto;
+  }
+  .has-archive-shelf .profile-panel-header { left: 3.1vw; flex-direction: row-reverse; }
+  .has-archive-shelf .profile-panel-profile { right: 3.1vw; gap: 5px; }
+  .has-archive-shelf .profile-panel-profile::before { content: 'NetEase'; }
+  .has-archive-shelf .profile-panel-profile .profile-identity {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .has-archive-shelf > .playlist-player {
+    position: absolute;
+    inset: 0;
+    padding: 0;
+    background: transparent;
+  }
+  .cd-archive { position: absolute; inset: 0; }
+  .cd-browser, .cd-player { position: absolute; inset: 0; }
+  .cd-browser[hidden], .cd-player[hidden], .cd-case[hidden], .cd-insert img[hidden] { display: none; }
+  .cd-shelf {
+    --cd-height: min(39svh, 31vw);
+    position: absolute;
+    inset: 18% 0 auto;
+    height: 48%;
+    perspective: 1400px;
+    touch-action: pan-y;
+  }
+  .cd-shelf::before {
+    position: absolute;
+    content: '';
+    inset: auto 9% 4% 9%;
+    height: 11%;
+    background: radial-gradient(ellipse, #20232936, transparent 70%);
+  }
+  .cd-book {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: calc(var(--cd-height) * 1.22);
+    height: var(--cd-height);
+    border: 0;
+    padding: 0;
+    background: transparent;
+    pointer-events: none;
+  }
+  .cd-spine {
+    position: absolute;
+    inset: 0 auto 0 50%;
+    width: max(15px, calc(var(--cd-height) * .115));
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
+    padding: 8px 2px;
+    color: #f8f1e9;
+    background: linear-gradient(90deg,#1115,#f5fbff4a 15%,transparent 58%,#1115), var(--cd-inlay);
+    box-shadow: inset 1px 0 2px #fff5, 1px 3px 5px #1113;
+    pointer-events: auto;
+    cursor: pointer;
+  }
+  .cd-book.is-selected .cd-spine { pointer-events: none; }
+  .cd-spine b {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    min-block-size: 0;
+    overflow: hidden;
+    font: 400 clamp(8px, 1.5svh, 14px)/1 'Six Caps', 'Songti TC', PMingLiU, serif;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+  }
+  .cd-spine small { font: 400 8px/1 var(--sans); }
+  /* CD jewel case photo by DiscoA340, Wikimedia Commons, CC0 1.0. */
+  .cd-case {
+    --cd-photo: url('./playlist/jewel-case.webp') 38.65% 46.77% / 109.25% 105.87% no-repeat;
+    position: relative;
+    aspect-ratio: 1.22;
+    filter: drop-shadow(1px 5px 5px #292b2945);
+  }
+  .cd-book .cd-case { position: absolute; inset: 0; }
+  .cd-book.is-selected .cd-case { pointer-events: auto; cursor: pointer; }
+  .cd-case::before, .cd-case::after {
+    position: absolute;
+    inset: 0;
+    content: '';
+    pointer-events: none;
+    background: var(--cd-photo);
+  }
+  .cd-case::before {
+    clip-path: polygon(3.8% .55%, 96.5% .15%, 99.65% 98.45%, 99.25% 99.55%, .35% 99.65%, .12% 98.6%);
+  }
+  .cd-case::after {
+    z-index: 2;
+    mask-image: radial-gradient(ellipse 4% 2.5% at 26.5% 4.55%, #000 67%, transparent 100%),
+      radial-gradient(ellipse 4% 2.5% at 79.75% 4.2%, #000 67%, transparent 100%),
+      radial-gradient(ellipse 4% 2.5% at 23.8% 96.2%, #000 67%, transparent 100%),
+      radial-gradient(ellipse 4% 2.5% at 83% 95.8%, #000 67%, transparent 100%);
+  }
+  .cd-insert {
+    position: absolute;
+    z-index: 1;
+    inset: 3.65% 2.7% 4.2% 10.95%;
+    display: grid;
+    place-items: center;
+    padding: 6%;
+    background: #29262a;
+    color: #eee9de;
+    text-align: center;
+    font: 400 clamp(13px, 2.5vw, 26px)/1.1 var(--serif);
+    clip-path: polygon(2.5% .2%, 95.9% .55%, 100% 99.7%, 0 100%);
+  }
+  .cd-insert img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .cd-caption {
+    position: absolute;
+    inset: 67% auto auto 50%;
+    translate: -50%;
+    width: min(90vw, 37rem);
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    gap: 5px;
+    align-items: center;
+    text-align: center;
+  }
+  .cd-caption button {
+    min-height: 44px;
+    border: 1px solid var(--song-rule);
+    background: transparent;
+    color: var(--song-ink);
+    cursor: pointer;
+    pointer-events: auto;
+  }
+  .cd-caption strong {
+    font: 400 clamp(25px, 4.2vw, 52px)/1.12 'Six Caps', var(--serif);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+  .cd-caption small, .cd-player-title :is(p, small), .cd-transport a {
+    display: block;
+    margin-top: 6px;
+    color: var(--song-muted);
+    font: 400 11px/1.35 var(--sans);
+    letter-spacing: .11em;
+  }
+  .cd-book:focus-visible :is(.cd-case,.cd-spine), .cd-caption button:focus-visible {
+    outline: 2px solid var(--song-accent);
+    outline-offset: 3px;
+  }
+  .cd-player {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: clamp(16px, 4svh, 42px) 6vw;
+    align-items: center;
+    padding: 12svh 8vw 8svh;
+    color: var(--song-ink);
+  }
+  .cd-player-title p { padding-bottom: 10px; border-bottom: 1px solid var(--song-rule); text-transform: uppercase; }
+  .cd-player-title h3 {
+    margin-top: 12px;
+    font: 400 clamp(24px, 4.5vw, 64px)/1.05 var(--serif);
+    overflow-wrap: anywhere;
+  }
+  .cd-player-art { width: min(100%, 48svh); justify-self: end; }
+  .cd-transport {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--song-rule);
+    padding-top: 8px;
+    pointer-events: auto;
+  }
+  .cd-transport iframe { width: min(100%, 41rem); height: 106px; }
+  .cd-transport a { width: fit-content; padding-block: 8px; color: var(--song-ink); text-underline-offset: 3px; }
+  @media (max-width: 560px) {
+    .cd-shelf { --cd-height: min(29svh, 54vw); inset-block-start: 26%; height: 34%; }
+    .cd-caption { inset-block-start: 63%; }
+    .cd-player { padding: 14svh 6vw 7svh; }
+  }
   .stage[data-playlist-open].local-archive.profile-open :is(.profile-panel, .archive-player) {
     background: transparent;
   }
@@ -687,7 +886,7 @@
     .hero-menu { width: min(57vw, 19rem); }
     .profile-panel { right: 5vw; width: 61vw; }
     .profile-panel.has-guestbook { width: 68vw; }
-    .profile-panel.has-playlist-player { width: 84vw; }
+    .profile-panel.has-playlist-player:not(.has-archive-shelf) { width: 84vw; }
     .profile-panel > * { background: var(--song-paper); }
     .profile-heroes li { flex-direction: column; align-items: flex-start; gap: 5px; }
     .stage.profile-open .cross { transform: translateX(-145%); }
@@ -1564,6 +1763,7 @@
       var profileSection = document.getElementById('profileSection');
       var playlistPlayer = document.getElementById('playlistPlayer');
       var playlistPlayerTemplate = document.getElementById('playlistPlayerTemplate');
+      var disposePlaylistShelf;
 
       function showProfile(trigger, section, returnTo) {
         var isGuestbook = trigger === guestbookOpen;
@@ -1580,8 +1780,21 @@
         profilePanel.classList.toggle('has-playlist-player', showPlaylistPlayer);
         playlistPlayer.hidden = !showPlaylistPlayer;
         if (showPlaylistPlayer) {
-          audio.pause();
-          playlistPlayer.replaceChildren(playlistPlayerTemplate.content.cloneNode(true));
+          var archive = document.createElement('div');
+          archive.className = 'cd-archive';
+          playlistPlayer.replaceChildren(archive);
+          profilePanel.classList.add('has-archive-shelf');
+          import('./playlist/shelf.js').then(function (module) {
+            return module.mountPlaylistShelf(archive, profileBack, function () { audio.pause(); });
+          }).then(function (dispose) {
+            if (archive.isConnected) disposePlaylistShelf = dispose;
+            else dispose?.();
+          }).catch(function () {
+            if (!archive.isConnected) return;
+            profilePanel.classList.remove('has-archive-shelf');
+            audio.pause();
+            playlistPlayer.replaceChildren(playlistPlayerTemplate.content.cloneNode(true));
+          });
         }
         stage.classList.add('profile-open');
         trigger.setAttribute('aria-expanded', 'true');
@@ -1623,6 +1836,9 @@
       });
 
       function closeProfile() {
+        disposePlaylistShelf?.();
+        disposePlaylistShelf = undefined;
+        profilePanel.classList.remove('has-archive-shelf');
         playlistPlayer.replaceChildren();
         playlistPlayer.hidden = true;
         stage.removeAttribute('data-playlist-open');
