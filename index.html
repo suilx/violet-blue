@@ -450,12 +450,6 @@
     padding-block: 12px;
     min-width: 0;
   }
-  .playlist-player iframe {
-    display: block;
-    width: 100%;
-    height: 396px;
-    border: 0;
-  }
   .profile-panel.has-archive-shelf {
     inset: 0;
     width: auto;
@@ -477,8 +471,15 @@
     text-transform: uppercase;
     pointer-events: auto;
   }
-  .has-archive-shelf .profile-panel-header { left: 3.1vw; flex-direction: row-reverse; }
+  .has-archive-shelf .profile-panel-header {
+    left: 3.1vw;
+    min-height: 58px;
+    padding: 0 14px;
+    border: 1px solid var(--song-rule);
+    flex-direction: row-reverse;
+  }
   .has-archive-shelf .profile-panel-profile { right: 3.1vw; gap: 5px; }
+  .has-archive-shelf:has(.cd-player:not([hidden])) > .profile-panel-profile { display: none; }
   .has-archive-shelf .profile-panel-profile::before { content: 'NetEase'; }
   .has-archive-shelf .profile-panel-profile .profile-identity {
     position: absolute;
@@ -596,13 +597,14 @@
     translate: -50%;
     width: min(90vw, 37rem);
     display: grid;
-    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    grid-template-columns: 58px minmax(0, 1fr) 58px;
     gap: 5px;
     align-items: center;
     text-align: center;
   }
   .cd-caption button {
-    min-height: 44px;
+    min-height: 56px;
+    font: 400 19px/1 var(--sans);
     border: 1px solid var(--song-rule);
     background: transparent;
     color: var(--song-ink);
@@ -615,7 +617,7 @@
     text-transform: uppercase;
     overflow-wrap: anywhere;
   }
-  .cd-caption small, .cd-player-title > :is(p, small), .cd-transport a {
+  .cd-caption small, .cd-player-title > :is(p, small) {
     display: block;
     margin-top: 6px;
     color: var(--song-muted);
@@ -671,14 +673,15 @@
   }
   .cd-lyrics-header button {
     border: 0;
-    padding: 6px 0;
-    min-height: 32px;
+    padding: 8px 10px;
+    min-height: 44px;
     background: transparent;
     color: var(--song-accent);
     font: 400 11px/1.35 var(--sans);
     pointer-events: auto;
     cursor: pointer;
   }
+  .cd-lyrics-header button:disabled { opacity: .5; cursor: default; }
   .cd-lyrics-lines {
     position: relative;
     max-height: clamp(76px, 24svh, 220px);
@@ -700,21 +703,84 @@
     font: 400 clamp(24px, 4.5vw, 64px)/1.05 var(--serif);
     overflow-wrap: anywhere;
   }
-  .cd-player-art { width: min(100%, 48svh); justify-self: end; }
-  .cd-transport {
-    grid-column: 1 / -1;
-    border-top: 1px solid var(--song-rule);
-    padding-top: 8px;
+  .cd-player-art {
+    width: min(100%, 48svh);
+    justify-self: end;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
     pointer-events: auto;
   }
-  .cd-transport audio { width: min(100%, 19rem); }
-  .cd-transport iframe {
-    width: min(100%, 19rem);
-    height: 57px;
-    filter: url('#cd-player-ink');
+  .cd-transport {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) minmax(78px, 22%);
+    align-items: center;
+    gap: 8px clamp(8px, 2vw, 26px);
+    border-top: 1px solid var(--song-rule);
+    padding-top: 12px;
+    pointer-events: auto;
   }
-  .cd-player-filter { position: absolute; color: var(--song-ink); pointer-events: none; }
-  .cd-transport a { width: fit-content; padding-block: 8px; color: var(--song-ink); text-underline-offset: 3px; }
+  .cd-control {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--song-rule);
+    background: transparent;
+    color: var(--song-ink);
+    cursor: pointer;
+  }
+  .cd-control:hover { color: var(--song-accent); border-color: currentColor; }
+  .cd-control svg { width: 21px; height: 21px; fill: currentColor; }
+  .cd-play {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    color: var(--song-accent);
+  }
+  .cd-mute { border-color: transparent; }
+  .cd-sound-icon, .cd-muted-icon {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.25;
+    stroke-linecap: round;
+  }
+  .cd-play:not([data-playing]) .cd-pause-icon, .cd-play[data-playing] .cd-play-icon,
+  .cd-mute:not([data-muted]) .cd-muted-icon, .cd-mute[data-muted] .cd-sound-icon { display: none; }
+  .cd-volume { display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: center; }
+  .cd-range {
+    --fill: 0%;
+    appearance: none;
+    width: 100%;
+    height: 32px;
+    background: linear-gradient(to right, var(--song-accent) var(--fill), var(--song-rule) var(--fill))
+      center / 100% 2px no-repeat;
+    cursor: pointer;
+  }
+  .cd-range:disabled { cursor: default; opacity: .65; }
+  .cd-range::-webkit-slider-thumb {
+    appearance: none;
+    width: 11px;
+    height: 11px;
+    border: 1px solid var(--song-accent);
+    border-radius: 50%;
+    background: var(--song-paper);
+  }
+  .cd-range::-moz-range-thumb {
+    width: 9px;
+    height: 9px;
+    border: 1px solid var(--song-accent);
+    border-radius: 50%;
+    background: var(--song-paper);
+  }
+  .cd-times, .cd-playback-status { color: var(--song-muted); font: 400 11px/1.35 var(--sans); }
+  .cd-times { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; }
+  .cd-playback-status { grid-column: 2 / -1; }
+  .cd-archive :is(.cd-control, .cd-range, .cd-player-art):focus-visible {
+    outline: 2px solid var(--song-accent);
+    outline-offset: 4px;
+  }
   @media (max-width: 560px) {
     .cd-shelf { --cd-height: min(29svh, 54vw); inset-block-start: 26%; height: 34%; }
     .cd-caption { inset-block-start: 63%; }
@@ -732,8 +798,8 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    min-height: 44px;
-    padding: 12px 0;
+    min-height: 58px;
+    padding: 14px 12px;
     border: 0;
     border-block: 1px solid var(--song-rule);
     background: transparent;
@@ -742,6 +808,7 @@
     font: 400 12px/1.4 var(--sans);
     text-align: left;
   }
+  .profile-panel-header > span:last-child { font-size: 19px; }
   .profile-panel-header > span:last-child,
   .profile-panel-header:is(:hover, :focus-visible) { color: var(--song-accent); }
   .profile-panel-profile {
@@ -1083,15 +1150,6 @@
         </g>
       </svg>
     </button>
-    <svg class="cd-player-filter" width="0" height="0" aria-hidden="true" focusable="false">
-      <defs>
-        <filter id="cd-player-ink" color-interpolation-filters="sRGB">
-          <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -.2126 -.7152 -.0722 1 0" result="inkMask"/>
-          <feFlood flood-color="currentColor" result="ink"/>
-          <feComposite in="ink" in2="inkMask" operator="in"/>
-        </filter>
-      </defs>
-    </svg>
     <section class="profile-panel" id="socialProfile" aria-labelledby="profileTitle" inert>
       <button class="profile-panel-header" id="profileBack" type="button">
         <span id="profileSection"></span>
@@ -1868,7 +1926,7 @@
           archive.className = 'cd-archive';
           playlistPlayer.replaceChildren(archive);
           profilePanel.classList.add('has-archive-shelf');
-          import('./playlist/shelf.js?v=6').then(function (module) {
+          import('./playlist/shelf.js?v=7').then(function (module) {
             return module.mountPlaylistShelf(archive, profileBack, {
               audio: audio,
               currentCue: function () { return {lines: tracks[current].lyrics, index: currentLine}; },

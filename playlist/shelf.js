@@ -33,12 +33,27 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
       <div class="cd-player-title">
         <p>Selected track</p><h3></h3><small></small>
         <section class="cd-lyrics" aria-label="Lyrics" hidden>
-          <div class="cd-lyrics-header"><h4>Lyrics</h4><button type="button" hidden>回到開頭</button></div>
+          <div class="cd-lyrics-header"><h4>Lyrics</h4><button type="button" disabled>回到開頭</button></div>
           <div class="cd-lyrics-lines" tabindex="0"></div>
         </section>
       </div>
-      <div class="cd-case cd-player-art"></div>
-      <div class="cd-transport"></div>
+      <button class="cd-case cd-player-art" type="button" aria-label="Back to covers"></button>
+      <div class="cd-transport" role="group" aria-label="Playback controls">
+        <button class="cd-control cd-play" type="button" aria-label="Play">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path class="cd-play-icon" d="M9 5l11 7-11 7z"/><path class="cd-pause-icon" d="M8 5h3v14H8zm6 0h3v14h-3z"/></svg>
+        </button>
+        <div class="cd-timeline">
+          <input class="cd-range cd-seek" type="range" min="0" max="0" step="0.1" value="0" aria-label="Playback position" disabled>
+          <div class="cd-times"><span>0:00</span><span>–:––</span></div>
+        </div>
+        <div class="cd-volume">
+          <button class="cd-control cd-mute" type="button" aria-label="Mute">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path class="cd-sound-icon" d="M16 9a4 4 0 010 6m2-8a7 7 0 010 10"/><path class="cd-muted-icon" d="m16 10 4 4m0-4-4 4"/></svg>
+          </button>
+          <input class="cd-range cd-level" type="range" min="0" max="100" value="80" aria-label="Volume">
+        </div>
+        <p class="cd-playback-status" role="status" hidden></p>
+      </div>
     </div>`;
   const browser = host.querySelector('.cd-browser');
   const player = host.querySelector('.cd-player');
@@ -48,10 +63,17 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
   const homeLyrics = host.querySelector('.cd-home-lyrics');
   const trackTitle = player.querySelector('h3');
   const trackArtist = player.querySelector('small');
+  const playerCover = player.querySelector('.cd-player-art');
   const lyrics = player.querySelector('.cd-lyrics');
   const restart = lyrics.querySelector('button');
   const lyricsLines = lyrics.querySelector('.cd-lyrics-lines');
   const transport = host.querySelector('.cd-transport');
+  const play = transport.querySelector('.cd-play');
+  const seek = transport.querySelector('.cd-seek');
+  const [elapsed, duration] = transport.querySelectorAll('.cd-times span');
+  const mute = transport.querySelector('.cd-mute');
+  const level = transport.querySelector('.cd-level');
+  const playbackStatus = transport.querySelector('.cd-playback-status');
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const controller = new AbortController();
   const { signal } = controller;
@@ -70,6 +92,50 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
   let wheelStop;
   let lastLyricLines;
   let lastLyricIndex = -1;
+  let audio;
+  let stream;
+  let volume = .8;
+  let muted = false;
+  let preview;
+  let previewTimer;
+
+  function trackStream(track) {
+    return 'https://music.163.com/song/media/outer/url?id=' + track.id + '.mp3';
+  }
+
+  function releaseAudio(media) {
+    media.pause();
+    media.removeAttribute('src');
+    media.load();
+  }
+
+  function stopPreview() {
+    clearTimeout(previewTimer);
+    if (!preview) return;
+    const media = preview;
+    preview = undefined;
+    releaseAudio(media);
+  }
+
+  function queuePreview() {
+    if (selected < 0 || browser.hidden || frame || drag?.moved || wheelStop || document.hidden) return;
+    const track = tracks[selected];
+    previewTimer = setTimeout(() => {
+      const media = new Audio(trackStream(track));
+      preview = media;
+      media.volume = volume;
+      media.muted = muted;
+      media.addEventListener('timeupdate', () => {
+        if (preview === media && media.currentTime >= 12) stopPreview();
+      });
+      media.addEventListener('ended', () => {
+        if (preview === media) stopPreview();
+      }, {once:true});
+      media.play().catch(() => {
+        if (preview === media) stopPreview();
+      });
+    }, 3000);
+  }
 
   function setText(element, value, language) {
     element.textContent = value;
@@ -236,10 +302,14 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
     if (Math.abs(position - target) < .009) position = target;
     render();
     frame = position === target ? 0 : requestAnimationFrame(tick);
-    if (!frame) lastFrame = 0;
+    if (!frame) {
+      lastFrame = 0;
+      queuePreview();
+    }
   }
 
   function move(index, immediate = false) {
+    stopPreview();
     target = index;
     if (!drag?.moved && !wheelStop && Number.isInteger(index)) primeCovers(index);
     if (immediate || motion.matches) {
@@ -247,6 +317,7 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
       frame = lastFrame = 0;
       position = target;
       render();
+      queuePreview();
     } else if (!frame) frame = requestAnimationFrame(tick);
   }
 
@@ -271,25 +342,54 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
     for (const event of ['playing', 'timeupdate', 'seeked']) audio.addEventListener(event, updateCue);
   }
 
-  function embedPlayer(track) {
-    const embed = document.createElement('iframe');
-    embed.title = 'NetEase player for ' + track.title;
-    embed.allow = 'encrypted-media';
-    embed.src = 'https://music.163.com/outchain/player?type=2&id=' + track.id + '&auto=0&height=32';
-    return embed;
+  function formatTime(seconds) {
+    const time = Math.floor(seconds);
+    return Math.floor(time / 60) + ':' + String(time % 60).padStart(2, '0');
+  }
+
+  function showStatus(message) {
+    playbackStatus.textContent = message;
+    playbackStatus.hidden = !message;
+  }
+
+  function updateTransport() {
+    const playing = audio && !audio.paused && !audio.ended && !audio.error;
+    play.toggleAttribute('data-playing', Boolean(playing));
+    play.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+    const length = Number.isFinite(audio?.duration) && !audio.error ? audio.duration : 0;
+    const time = length ? Math.min(audio.currentTime, length) : 0;
+    seek.disabled = restart.disabled = !length;
+    seek.max = length;
+    seek.value = time;
+    seek.setAttribute('aria-valuetext', formatTime(time) + ' / ' + (length ? formatTime(length) : '–:––'));
+    seek.style.setProperty('--fill', (length ? time / length * 100 : 0) + '%');
+    elapsed.textContent = formatTime(time);
+    duration.textContent = length ? formatTime(length) : '–:––';
+  }
+
+  function updateVolume() {
+    const silent = muted || volume === 0;
+    mute.toggleAttribute('data-muted', silent);
+    mute.setAttribute('aria-label', silent ? 'Unmute' : 'Mute');
+    level.value = muted ? 0 : Math.round(volume * 100);
+    level.style.setProperty('--fill', level.value + '%');
+    if (audio) {
+      audio.volume = volume;
+      audio.muted = muted;
+    }
   }
 
   function clearTransport() {
-    const audio = transport.querySelector('audio');
-    transport.replaceChildren();
-    if (!audio) return;
-    audio.pause();
-    audio.removeAttribute('src');
-    audio.load();
+    const media = audio;
+    audio = undefined;
+    if (!media) return;
+    releaseAudio(media);
+    media.remove();
   }
 
   function showPlayer(track, face) {
     const origin = face.getBoundingClientRect();
+    stopPreview();
     clearTimeout(wheelStop);
     wheelStop = undefined;
     cancelAnimationFrame(frame);
@@ -297,7 +397,7 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
     position = target = Math.round(position);
     const {insert, image} = cover(track);
     if (track.cover) image.src = track.cover;
-    player.querySelector('.cd-player-art').replaceChildren(insert);
+    playerCover.replaceChildren(insert);
     setText(trackTitle, track.title, track.titleLang);
     setText(trackArtist, track.artist, track.artistLang);
     const suppliedLines = lyricsByTrack[track.id];
@@ -311,33 +411,27 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
     lyricsLines.scrollTop = 0;
     lyricsLines.classList.remove('has-active-line');
     lyrics.hidden = !publishedLines.length;
-    restart.hidden = true;
-    const external = document.createElement('a');
-    external.href = 'https://music.163.com/song?id=' + track.id;
-    external.target = '_blank';
-    external.rel = 'noopener noreferrer';
-    external.textContent = (suppliedLines !== undefined || publishedLines.length)
-      ? 'Open in NetEase ↗' : 'Track & lyrics on NetEase ↗';
     homeMusic.audio.pause();
     browser.hidden = true;
     player.hidden = false;
-    if (publishedLines.length) {
-      const audio = document.createElement('audio');
-      audio.controls = true;
-      audio.setAttribute('aria-label', track.title);
-      followPlayback(audio, publishedLines, lineNodes);
-      audio.addEventListener('error', () => {
-        if (!audio.isConnected) return;
-        restart.hidden = true;
-        lyricsLines.classList.remove('has-active-line');
-        lyricsLines.querySelector('[aria-current]')?.removeAttribute('aria-current');
-        audio.replaceWith(embedPlayer(track));
-      }, {once:true});
-      transport.replaceChildren(audio, external);
-      restart.hidden = false;
-      audio.src = 'https://music.163.com/song/media/outer/url?id=' + track.id + '.mp3';
-      audio.play().catch(() => {});
-    } else transport.replaceChildren(embedPlayer(track), external);
+    const media = document.createElement('audio');
+    audio = media;
+    stream = trackStream(track);
+    media.hidden = true;
+    transport.append(media);
+    updateTransport();
+    updateVolume();
+    showStatus('');
+    if (publishedLines.length) followPlayback(media, publishedLines, lineNodes);
+    for (const event of ['durationchange', 'timeupdate', 'play', 'pause', 'ended', 'error', 'playing', 'waiting']) {
+      media.addEventListener(event, () => {
+        if (audio !== media) return;
+        updateTransport();
+        if (event === 'error') showStatus('Playback unavailable. Press play to retry.');
+        else if (event === 'waiting' && !media.paused) showStatus('Loading…');
+        else if (event === 'playing' || (event === 'pause' && !media.error)) showStatus('');
+      });
+    }
     back.setAttribute('aria-label', 'Back to covers');
     if (!motion.matches && origin.width) {
       const bounds = player.getBoundingClientRect();
@@ -358,13 +452,46 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
     browser.hidden = false;
     back.setAttribute('aria-label', 'Back to Playlist');
     measure();
+    queuePreview();
     books[selected].button.focus({preventScroll:true});
   }
 
   back.addEventListener('click', returnToCovers, {capture:true, signal});
+  playerCover.addEventListener('click', returnToCovers);
+  play.addEventListener('click', () => {
+    const media = audio;
+    if (!media) return;
+    if (!media.paused && !media.ended) {
+      media.pause();
+      return;
+    }
+    if (!media.hasAttribute('src') || media.error) media.src = stream;
+    showStatus('');
+    media.play().catch(error => {
+      if (audio === media && error.name !== 'AbortError') {
+        updateTransport();
+        showStatus('Playback unavailable. Press play to retry.');
+      }
+    });
+  });
+  seek.addEventListener('input', () => {
+    if (audio && !seek.disabled) {
+      audio.currentTime = Number(seek.value);
+      updateTransport();
+    }
+  });
+  mute.addEventListener('click', () => {
+    muted = !(muted || volume === 0);
+    if (!muted && volume === 0) volume = .8;
+    updateVolume();
+  });
+  level.addEventListener('input', () => {
+    volume = Number(level.value) / 100;
+    muted = false;
+    updateVolume();
+  });
   restart.addEventListener('click', () => {
-    const audio = transport.querySelector('audio');
-    if (audio) audio.currentTime = 0;
+    if (audio && !restart.disabled) audio.currentTime = 0;
   });
   host.addEventListener('keydown', event => {
     if (event.key === 'Escape') returnToCovers(event);
@@ -425,6 +552,11 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
   const resize = new ResizeObserver(measure);
   resize.observe(shelf);
   measure();
+  queuePreview();
+  document.addEventListener('visibilitychange', () => {
+    stopPreview();
+    if (!document.hidden) queuePreview();
+  }, {signal});
   for (const name of ['timeupdate', 'playing', 'pause', 'emptied']) {
     homeMusic.audio.addEventListener(name, updateHomeLyrics, {signal});
   }
@@ -434,6 +566,7 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
     controller.abort();
     resize.disconnect();
     clearTimeout(wheelStop);
+    stopPreview();
     clearTransport();
     cancelAnimationFrame(frame);
   };
