@@ -433,6 +433,23 @@
     transition-delay: .15s, .15s, 0s;
   }
   .stage[data-playlist-open].profile-open .cross { opacity: 0.18; }
+  .profile-panel.has-playlist-player {
+    align-content: start;
+    width: min(48vw, 34rem);
+  }
+  .has-playlist-player .profile-panel-profile {
+    padding-block: clamp(16px, 3svh, 28px);
+  }
+  .playlist-player {
+    padding-block: 12px;
+    min-width: 0;
+  }
+  .playlist-player iframe {
+    display: block;
+    width: 100%;
+    height: 396px;
+    border: 0;
+  }
   .stage[data-playlist-open].local-archive.profile-open :is(.profile-panel, .archive-player) {
     background: transparent;
   }
@@ -670,6 +687,7 @@
     .hero-menu { width: min(57vw, 19rem); }
     .profile-panel { right: 5vw; width: 61vw; }
     .profile-panel.has-guestbook { width: 68vw; }
+    .profile-panel.has-playlist-player { width: 84vw; }
     .profile-panel > * { background: var(--song-paper); }
     .profile-heroes li { flex-direction: column; align-items: flex-start; gap: 5px; }
     .stage.profile-open .cross { transform: translateX(-145%); }
@@ -839,6 +857,11 @@
         </div>
         <span aria-hidden="true">↗</span>
       </a>
+      <div class="playlist-player" id="playlistPlayer" hidden></div>
+      <template id="playlistPlayerTemplate">
+        <iframe title="NetEase Cloud Music playlist player" allow="encrypted-media"
+          src="https://music.163.com/outchain/player?type=0&amp;id=9495743749&amp;auto=0&amp;height=330"></iframe>
+      </template>
       <div class="profile-ranks" id="deadlockRanks" hidden>
         <div class="profile-rank">
           <span>Phantom</span>
@@ -1539,6 +1562,8 @@
       var guestbook = document.getElementById('guestbook');
       var guestbookOpen = document.getElementById('guestbookOpen');
       var profileSection = document.getElementById('profileSection');
+      var playlistPlayer = document.getElementById('playlistPlayer');
+      var playlistPlayerTemplate = document.getElementById('playlistPlayerTemplate');
 
       function showProfile(trigger, section, returnTo) {
         var isGuestbook = trigger === guestbookOpen;
@@ -1549,7 +1574,15 @@
         profilePanel.classList.toggle('has-guestbook', isGuestbook);
         profileLink.hidden = isGuestbook;
         guestbook.hidden = !isGuestbook;
-        stage.toggleAttribute('data-playlist-open', section === 'PLAYLIST');
+        var isPlaylist = section === 'PLAYLIST';
+        stage.toggleAttribute('data-playlist-open', isPlaylist);
+        var showPlaylistPlayer = isPlaylist && !profilePanel.querySelector('.local-listening');
+        profilePanel.classList.toggle('has-playlist-player', showPlaylistPlayer);
+        playlistPlayer.hidden = !showPlaylistPlayer;
+        if (showPlaylistPlayer) {
+          audio.pause();
+          playlistPlayer.replaceChildren(playlistPlayerTemplate.content.cloneNode(true));
+        }
         stage.classList.add('profile-open');
         trigger.setAttribute('aria-expanded', 'true');
         profilePanel.inert = false;
@@ -1590,6 +1623,8 @@
       });
 
       function closeProfile() {
+        playlistPlayer.replaceChildren();
+        playlistPlayer.hidden = true;
         stage.removeAttribute('data-playlist-open');
         stage.classList.remove('profile-open');
         profileTrigger.setAttribute('aria-expanded', 'false');
