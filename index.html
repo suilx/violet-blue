@@ -1867,7 +1867,7 @@
           archive.className = 'cd-archive';
           playlistPlayer.replaceChildren(archive);
           profilePanel.classList.add('has-archive-shelf');
-          import('./playlist/shelf.js?v=4').then(function (module) {
+          import('./playlist/shelf.js?v=5').then(function (module) {
             return module.mountPlaylistShelf(archive, profileBack, {
               audio: audio,
               currentCue: function () { return {lines: tracks[current].lyrics, index: currentLine}; },

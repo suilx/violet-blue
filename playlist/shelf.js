@@ -1,4 +1,5 @@
 let catalogue;
+let lyricCatalogue;
 
 export async function mountPlaylistShelf(host, back, homeMusic) {
   catalogue ??= fetch(new URL('tracks.json?v=4', import.meta.url)).then(response => {
@@ -8,7 +9,14 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
     catalogue = undefined;
     throw error;
   });
-  const tracks = await catalogue;
+  lyricCatalogue ??= fetch(new URL('lyrics.json?v=1', import.meta.url)).then(response => {
+    if (!response.ok) throw Error('Playlist lyrics unavailable');
+    return response.json();
+  }).catch(() => {
+    lyricCatalogue = undefined;
+    return {};
+  });
+  const [tracks, lyricsByTrack] = await Promise.all([catalogue, lyricCatalogue]);
   if (!host.isConnected) return;
 
   host.innerHTML = `
@@ -284,7 +292,8 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
     player.querySelector('.cd-player-art').replaceChildren(insert);
     setText(trackTitle, track.title, track.titleLang);
     setText(trackArtist, track.artist, track.artistLang);
-    const publishedLines = homeMusic.lyricsFor(track.title);
+    const suppliedLines = lyricsByTrack[track.id];
+    const publishedLines = suppliedLines ?? homeMusic.lyricsFor(track.title);
     const lineNodes = publishedLines.map(({text}) => {
       const line = document.createElement('p');
       line.textContent = text;
@@ -298,7 +307,8 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
     external.href = 'https://music.163.com/song?id=' + track.id;
     external.target = '_blank';
     external.rel = 'noopener noreferrer';
-    external.textContent = publishedLines.length ? 'Open in NetEase ↗' : 'Track & lyrics on NetEase ↗';
+    external.textContent = (suppliedLines !== undefined || publishedLines.length)
+      ? 'Open in NetEase ↗' : 'Track & lyrics on NetEase ↗';
     homeMusic.audio.pause();
     const embed = document.createElement('iframe');
     embed.title = 'NetEase player for ' + track.title;
