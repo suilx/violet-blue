@@ -437,7 +437,7 @@
     transform: translateX(0);
     transition-delay: .15s, .15s, 0s;
   }
-  .stage[data-playlist-open].profile-open .cross { opacity: 0.18; }
+  .stage[data-playlist-open].profile-open .cross { opacity: 0.18; cursor: default; }
   .stage[data-playlist-open].profile-open .cross > :is(canvas, svg) { pointer-events: auto; }
   .profile-panel.has-playlist-player {
     align-content: start;
@@ -1729,6 +1729,7 @@
       }
 
       function startPlayback() {
+        if (stage.hasAttribute('data-playlist-open')) return;
         audio.play().catch(function () {});
       }
 
@@ -1766,8 +1767,8 @@
         btn.setAttribute('aria-pressed', 'false');
       });
       btn.addEventListener('click', function () {
+        if (stage.hasAttribute('data-playlist-open')) return;
         if (audio.paused) {
-          if (playlistPlayer.querySelector('.cd-player:not([hidden])')) profileBack.click();
           profilePanel.querySelector('.local-listening audio')?.pause();
           startPlayback();
         } else audio.pause();
@@ -1854,6 +1855,10 @@
         guestbook.hidden = !isGuestbook;
         var isPlaylist = section === 'PLAYLIST';
         stage.toggleAttribute('data-playlist-open', isPlaylist);
+        if (isPlaylist) {
+          btn.setAttribute('aria-disabled', 'true');
+          audio.pause();
+        }
         var showPlaylistPlayer = isPlaylist && !profilePanel.querySelector('.local-listening');
         profilePanel.classList.toggle('has-playlist-player', showPlaylistPlayer);
         playlistPlayer.hidden = !showPlaylistPlayer;
@@ -1928,6 +1933,7 @@
         playlistPlayer.replaceChildren();
         playlistPlayer.hidden = true;
         stage.removeAttribute('data-playlist-open');
+        btn.removeAttribute('aria-disabled');
         stage.classList.remove('profile-open');
         profileTrigger.setAttribute('aria-expanded', 'false');
         heroCopy.inert = false;
