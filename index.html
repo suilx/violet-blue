@@ -1784,7 +1784,7 @@
           archive.className = 'cd-archive';
           playlistPlayer.replaceChildren(archive);
           profilePanel.classList.add('has-archive-shelf');
-          import('./playlist/shelf.js').then(function (module) {
+          import('./playlist/shelf.js?v=2').then(function (module) {
             return module.mountPlaylistShelf(archive, profileBack, function () { audio.pause(); });
           }).then(function (dispose) {
             if (archive.isConnected) disposePlaylistShelf = dispose;

@@ -1,7 +1,7 @@
 let catalogue;
 
 export async function mountPlaylistShelf(host, back, pauseHome) {
-  catalogue ??= fetch(new URL('tracks.json', import.meta.url)).then(response => {
+  catalogue ??= fetch(new URL('tracks.json?v=2', import.meta.url)).then(response => {
     if (!response.ok) throw Error('Playlist unavailable');
     return response.json();
   }).catch(error => {
@@ -37,6 +37,7 @@ export async function mountPlaylistShelf(host, back, pauseHome) {
   const swatches = ['#373c51', '#6f3a3b', '#4c5048', '#706151', '#464650', '#465764', '#633a45'];
   const wrap = index => (index % tracks.length + tracks.length) % tracks.length;
   let visible = new Set();
+  let nextVisible = new Set();
   let selected = -1;
   let position = 0;
   let target = 0;
@@ -103,24 +104,32 @@ export async function mountPlaylistShelf(host, back, pauseHome) {
     button.tabIndex = 0;
     button.classList.add('is-selected');
     button.setAttribute('aria-label', 'Open player for ' + tracks[index].title);
-    for (const offset of [0, -1, 1]) {
-      const nearby = wrap(index + offset);
-      if (tracks[nearby].cover && !books[nearby].image.hasAttribute('src')) {
-        books[nearby].image.src = tracks[nearby].cover;
-      }
-    }
     title.textContent = tracks[index].title;
     meta.textContent = tracks[index].artist + ' · ' + String(index + 1).padStart(2, '0') + ' / ' + tracks.length;
   }
 
+  function primeCovers(index) {
+    for (const offset of [0, -1, 1]) {
+      const nearby = wrap(index + offset);
+      const {cover} = tracks[nearby];
+      const {image} = books[nearby];
+      if (cover && !image.hasAttribute('src')) image.src = cover;
+    }
+  }
+
   function measure() {
-    if (browser.hidden || !shelf.clientWidth) return;
+    if (browser.hidden) return;
+    const shelfWidth = shelf.clientWidth;
+    if (!shelfWidth) return;
     const {offsetHeight:height, offsetWidth:width} = books[Math.max(0, selected)].button;
-    const radius = shelf.clientWidth < 540 ? 5 : 8;
-    const reach = Math.min(shelf.clientWidth * .46, height * 1.65);
+    const compact = shelfWidth < 540;
+    const radius = compact ? 5 : 8;
+    const reach = Math.min(shelfWidth * .46, height * 1.65);
     const nearest = Math.min(width * .5 + height * .06, reach * .93);
-    geometry = {height, radius, nearest, spread:(reach - nearest) / (1 - Math.exp(-(radius - 1) / 6))};
+    geometry = {height, radius, nearest, spread:(reach - nearest) / (1 - Math.exp(-(radius - 1) / 6)),
+      dragUnit:compact ? 26 : 38};
     render();
+    if (!frame && !drag?.moved && !wheelStop) primeCovers(selected);
   }
 
   function render() {
@@ -129,12 +138,13 @@ export async function mountPlaylistShelf(host, back, pauseHome) {
     const limit = radius + .65;
     const center = Math.round(position);
     updateSelection(wrap(center));
-    const nextVisible = new Set();
+    nextVisible.clear();
     for (let slot = Math.ceil(position - limit); slot <= Math.floor(position + limit); slot++) {
       const index = wrap(slot);
-      const {button, spine, face} = books[index];
+      const book = books[index];
+      const {button, spine, face} = book;
       nextVisible.add(index);
-      button.hidden = false;
+      if (button.hidden) button.hidden = false;
       const relative = slot - position;
       const distance = Math.abs(relative);
       const direction = Math.sign(relative);
@@ -144,17 +154,30 @@ export async function mountPlaylistShelf(host, back, pauseHome) {
       const opening = Math.max(0, 1 - distance);
       const front = opening ** 2 * (3 - 2 * opening);
       button.style.transform = `translate3d(calc(-50% + ${direction * x}px), ${(1 - scale) * height * .21}px, 0) scale(${scale})`;
-      button.style.opacity = Math.min(1, (limit - distance) / .65);
-      button.style.zIndex = 80 - Math.abs(slot - center);
-      face.hidden = front === 0;
-      face.style.transform = `rotateY(${direction * 79 * (1 - front)}deg)`;
-      face.style.opacity = front;
-      spine.style.opacity = 1 - front;
+      const opacity = Math.min(1, (limit - distance) / .65);
+      if (book.opacity !== opacity) {
+        button.style.opacity = opacity;
+        book.opacity = opacity;
+      }
+      const depth = 80 - Math.abs(slot - center);
+      if (book.depth !== depth) {
+        button.style.zIndex = depth;
+        book.depth = depth;
+      }
+      if (face.hidden !== (front === 0)) face.hidden = front === 0;
+      if (front > 0) face.style.transform = `rotateY(${direction * 79 * (1 - front)}deg)`;
+      if (book.front !== front) {
+        if (front > 0) face.style.opacity = front;
+        spine.style.opacity = 1 - front;
+        book.front = front;
+      }
     }
     for (const index of visible) {
       if (!nextVisible.has(index)) books[index].button.hidden = true;
     }
+    const previousVisible = visible;
     visible = nextVisible;
+    nextVisible = previousVisible;
   }
 
   function tick(now) {
@@ -169,6 +192,7 @@ export async function mountPlaylistShelf(host, back, pauseHome) {
 
   function move(index, immediate = false) {
     target = index;
+    if (!drag?.moved && !wheelStop && Number.isInteger(index)) primeCovers(index);
     if (immediate || motion.matches) {
       cancelAnimationFrame(frame);
       frame = lastFrame = 0;
@@ -179,6 +203,11 @@ export async function mountPlaylistShelf(host, back, pauseHome) {
 
   function showPlayer(track, face) {
     const origin = face.getBoundingClientRect();
+    clearTimeout(wheelStop);
+    wheelStop = undefined;
+    cancelAnimationFrame(frame);
+    frame = lastFrame = 0;
+    position = target = Math.round(position);
     const {insert, image} = cover(track);
     if (track.cover) image.src = track.cover;
     player.querySelector('.cd-player-art').replaceChildren(insert);
@@ -242,14 +271,16 @@ export async function mountPlaylistShelf(host, back, pauseHome) {
     drag = {id:event.pointerId, x:event.clientX, y:event.clientY, start:position, moved:false};
   });
   shelf.addEventListener('pointermove', event => {
-    if (drag?.id !== event.pointerId) return;
+    if (drag?.id !== event.pointerId || !geometry) return;
     const distance = drag.x - event.clientX;
     if (!drag.moved && Math.abs(distance) < Math.max(10, Math.abs(drag.y - event.clientY))) return;
     if (!drag.moved) {
       drag.moved = true;
+      clearTimeout(wheelStop);
+      wheelStop = undefined;
       shelf.setPointerCapture(event.pointerId);
     }
-    move(drag.start + distance / (shelf.clientWidth < 540 ? 26 : 38));
+    move(drag.start + distance / geometry.dragUnit);
   });
   function endDrag(event) {
     if (drag?.id !== event.pointerId) return;
@@ -271,9 +302,12 @@ export async function mountPlaylistShelf(host, back, pauseHome) {
     if (event.ctrlKey) return;
     event.preventDefault();
     const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-    move(target + delta * (event.deltaMode === 1 ? .22 : .012));
     clearTimeout(wheelStop);
-    wheelStop = setTimeout(() => move(Math.round(target)), 130);
+    wheelStop = setTimeout(() => {
+      wheelStop = undefined;
+      move(Math.round(target));
+    }, 130);
+    move(target + delta * (event.deltaMode === 1 ? .22 : .012));
   }, {passive:false});
   const resize = new ResizeObserver(measure);
   resize.observe(shelf);
