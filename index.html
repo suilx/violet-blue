@@ -641,28 +641,56 @@
     inset: calc(67% + 92px) 8vw auto;
     text-align: center;
     color: var(--song-ink);
-    font: 400 clamp(17px, 2.2vw, 28px)/1.45 var(--serif);
+    font: 400 clamp(16px, 2.1vw, 26px)/1.4 var(--serif);
+  }
+  .cd-home-lyric-cues p { min-height: 1.4em; }
+  .cd-home-lyric-cues p:not(:nth-child(2)) { opacity: .42; }
+  @media (prefers-reduced-motion: no-preference) {
+    .cd-home-lyric-cues { animation: cd-lyric-roll .38s cubic-bezier(.22,.74,.26,1) both; }
+    @keyframes cd-lyric-roll {
+      from { opacity: .5; transform: translateY(.7em); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   }
   .cd-lyrics {
     margin-top: clamp(16px, 3svh, 34px);
     border-top: 1px solid var(--song-rule);
     padding-top: 10px;
   }
+  .cd-lyrics-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
   .cd-lyrics h4 {
-    margin-bottom: 8px;
     color: var(--song-muted);
     font: 400 10px/1.35 var(--sans);
     letter-spacing: .14em;
     text-transform: uppercase;
   }
+  .cd-lyrics-header button {
+    border: 0;
+    padding: 6px 0;
+    min-height: 32px;
+    background: transparent;
+    color: var(--song-accent);
+    font: 400 11px/1.35 var(--sans);
+    pointer-events: auto;
+    cursor: pointer;
+  }
   .cd-lyrics-lines {
+    position: relative;
     max-height: clamp(76px, 24svh, 220px);
     overflow: auto;
-    padding-inline-end: 8px;
+    scrollbar-width: none;
     pointer-events: auto;
     font: 400 clamp(15px, 1.8vw, 23px)/1.5 var(--serif);
   }
+  .cd-lyrics-lines::-webkit-scrollbar { display: none; }
   .cd-lyrics-lines p + p { margin-top: .4em; }
+  .cd-lyrics-lines.has-active-line p:not([aria-current]) { opacity: .46; }
+  .cd-lyrics-lines [aria-current] { color: var(--song-accent); }
   .cd-lyrics-lines:focus-visible { outline: 1px solid var(--song-accent); }
   .cd-archive [lang="zh-Hant"] {
     font-family: 'Playlist Traditional', 'Songti TC', PMingLiU, serif;
@@ -1109,10 +1137,6 @@
         <span aria-hidden="true">↗</span>
       </a>
       <div class="playlist-player" id="playlistPlayer" hidden></div>
-      <template id="playlistPlayerTemplate">
-        <iframe title="NetEase Cloud Music playlist player" allow="encrypted-media"
-          src="https://music.163.com/outchain/player?type=0&amp;id=9495743749&amp;auto=0&amp;height=330"></iframe>
-      </template>
       <div class="profile-ranks" id="deadlockRanks" hidden>
         <div class="profile-rank">
           <span>Phantom</span>
@@ -1817,7 +1841,6 @@
       var guestbookOpen = document.getElementById('guestbookOpen');
       var profileSection = document.getElementById('profileSection');
       var playlistPlayer = document.getElementById('playlistPlayer');
-      var playlistPlayerTemplate = document.getElementById('playlistPlayerTemplate');
       var disposePlaylistShelf;
 
       function showProfile(trigger, section, returnTo) {
@@ -1839,10 +1862,10 @@
           archive.className = 'cd-archive';
           playlistPlayer.replaceChildren(archive);
           profilePanel.classList.add('has-archive-shelf');
-          import('./playlist/shelf.js?v=3').then(function (module) {
+          import('./playlist/shelf.js?v=4').then(function (module) {
             return module.mountPlaylistShelf(archive, profileBack, {
               audio: audio,
-              currentLine: function () { return tracks[current].lyrics[currentLine]?.text || ''; },
+              currentCue: function () { return {lines: tracks[current].lyrics, index: currentLine}; },
               lyricsFor: function (title) {
                 return tracks.find(function (track) {
                   return track.title.toLowerCase() === title.toLowerCase();
@@ -1854,9 +1877,9 @@
             else dispose?.();
           }).catch(function () {
             if (!archive.isConnected) return;
-            profilePanel.classList.remove('has-archive-shelf');
-            audio.pause();
-            playlistPlayer.replaceChildren(playlistPlayerTemplate.content.cloneNode(true));
+            profilePanel.classList.remove('has-archive-shelf', 'has-playlist-player');
+            playlistPlayer.replaceChildren();
+            playlistPlayer.hidden = true;
           });
         }
         stage.classList.add('profile-open');
