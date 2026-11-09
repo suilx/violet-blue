@@ -496,6 +496,8 @@
   }
   .cd-archive { position: absolute; inset: 0; }
   .cd-browser, .cd-player { position: absolute; inset: 0; }
+  .cd-browser[data-returning] .cd-book.is-selected .cd-case { visibility: hidden; }
+  .cd-browser[data-returning] + .cd-player { z-index: 1; }
   .cd-browser[hidden], .cd-player[hidden], .cd-case[hidden], .cd-insert img[hidden] { display: none; }
   .cd-shelf {
     --cd-height: min(39svh, 31vw);
@@ -695,6 +697,28 @@
   .cd-lyrics-lines.has-active-line p:not([aria-current]) { opacity: .46; }
   .cd-lyrics-lines [aria-current] { color: var(--song-accent); }
   .cd-lyrics-lines:focus-visible { outline: 1px solid var(--song-accent); }
+  .cd-lyric-readable {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .cd-lyric-word { white-space: nowrap; }
+  .cd-lyric-slot {
+    position: relative;
+    display: inline-block;
+    height: 1.5em;
+    overflow: hidden;
+    vertical-align: top;
+  }
+  .cd-lyric-slot > :first-child { visibility: hidden; }
+  .cd-lyric-reel {
+    position: absolute;
+    inset: 0;
+    text-align: center;
+  }
+  .cd-lyric-reel > span { display: block; height: 1.5em; }
   .cd-archive [lang="zh-Hant"] {
     font-family: 'Playlist Traditional', 'Songti TC', PMingLiU, serif;
   }
@@ -736,9 +760,12 @@
   .cd-play {
     width: 52px;
     height: 52px;
-    border-radius: 50%;
+    border: 0;
     color: var(--song-accent);
+    font: 400 30px/1 'Six Caps', 'Arial Narrow', var(--sans);
+    letter-spacing: .075em;
   }
+  .cd-play:hover { color: var(--song-ink); }
   .cd-mute { border-color: transparent; }
   .cd-sound-icon, .cd-muted-icon {
     fill: none;
@@ -746,7 +773,6 @@
     stroke-width: 1.25;
     stroke-linecap: round;
   }
-  .cd-play:not([data-playing]) .cd-pause-icon, .cd-play[data-playing] .cd-play-icon,
   .cd-mute:not([data-muted]) .cd-muted-icon, .cd-mute[data-muted] .cd-sound-icon { display: none; }
   .cd-volume { display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: center; }
   .cd-range {
@@ -1925,7 +1951,7 @@
           archive.className = 'cd-archive';
           playlistPlayer.replaceChildren(archive);
           profilePanel.classList.add('has-archive-shelf');
-          import('./playlist/shelf.js?v=7').then(function (module) {
+          import('./playlist/shelf.js?v=8').then(function (module) {
             return module.mountPlaylistShelf(archive, profileBack, {
               audio: audio,
               currentCue: function () { return {lines: tracks[current].lyrics, index: currentLine}; },

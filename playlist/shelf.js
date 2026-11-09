@@ -2,7 +2,7 @@ let catalogue;
 let lyricCatalogue;
 
 export async function mountPlaylistShelf(host, back, homeMusic) {
-  catalogue ??= fetch(new URL('tracks.json?v=4', import.meta.url)).then(response => {
+  catalogue ??= fetch(new URL('tracks.json?v=5', import.meta.url)).then(response => {
     if (!response.ok) throw Error('Playlist unavailable');
     return response.json();
   }).catch(error => {
@@ -40,7 +40,7 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
       <button class="cd-case cd-player-art" type="button" aria-label="Back to covers"></button>
       <div class="cd-transport" role="group" aria-label="Playback controls">
         <button class="cd-control cd-play" type="button" aria-label="Play">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path class="cd-play-icon" d="M9 5l11 7-11 7z"/><path class="cd-pause-icon" d="M8 5h3v14H8zm6 0h3v14h-3z"/></svg>
+          <span aria-hidden="true">PLAY</span>
         </button>
         <div class="cd-timeline">
           <input class="cd-range cd-seek" type="range" min="0" max="0" step="0.1" value="0" aria-label="Playback position" disabled>
@@ -69,6 +69,7 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
   const lyricsLines = lyrics.querySelector('.cd-lyrics-lines');
   const transport = host.querySelector('.cd-transport');
   const play = transport.querySelector('.cd-play');
+  const playLabel = play.firstElementChild;
   const seek = transport.querySelector('.cd-seek');
   const [elapsed, duration] = transport.querySelectorAll('.cd-times span');
   const mute = transport.querySelector('.cd-mute');
@@ -98,6 +99,7 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
   let muted = false;
   let preview;
   let previewTimer;
+  let returning = false;
 
   function trackStream(track) {
     return 'https://music.163.com/song/media/outer/url?id=' + track.id + '.mp3';
@@ -118,7 +120,7 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
   }
 
   function queuePreview() {
-    if (selected < 0 || browser.hidden || frame || drag?.moved || wheelStop || document.hidden) return;
+    if (selected < 0 || browser.hidden || returning || frame || drag?.moved || wheelStop || document.hidden) return;
     const track = tracks[selected];
     previewTimer = setTimeout(() => {
       const media = new Audio(trackStream(track));
@@ -323,15 +325,21 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
 
   function followPlayback(audio, lines, nodes) {
     let index = -1;
+    let restoreLine;
 
     function updateCue(event) {
       if (!audio.isConnected) return;
       const next = lines.findLastIndex(line => line.t <= audio.currentTime);
       if (next === index) return;
+      restoreLine?.();
+      restoreLine = undefined;
       nodes[index]?.removeAttribute('aria-current');
       index = next;
       const active = nodes[index];
       active?.setAttribute('aria-current', 'true');
+      if (active && !audio.paused && !audio.seeking && event.type !== 'seeked' && !motion.matches) {
+        restoreLine = rollLyric(active);
+      }
       lyricsLines.classList.toggle('has-active-line', Boolean(active));
       lyricsLines.scrollTo({
         top: active ? active.offsetTop - (lyricsLines.clientHeight - active.offsetHeight) / 2 : 0,
@@ -340,6 +348,61 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
     }
 
     for (const event of ['playing', 'timeupdate', 'seeked']) audio.addEventListener(event, updateCue);
+  }
+
+  function rollLyric(line) {
+    const text = line.textContent;
+    if (!text.trim() || !Element.prototype.animate || !Intl.Segmenter) return;
+
+    const accessible = document.createElement('span');
+    accessible.className = 'cd-lyric-readable';
+    accessible.textContent = text;
+    const visual = document.createElement('span');
+    visual.setAttribute('aria-hidden', 'true');
+    const words = new Intl.Segmenter(undefined, {granularity:'word'});
+    const graphemes = new Intl.Segmenter();
+    const reels = [];
+    const symbols = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    for (const {segment:word} of words.segment(text)) {
+      if (!word.trim()) {
+        visual.append(word);
+        continue;
+      }
+      const group = document.createElement('span');
+      if (/^[\p{Script=Latin}\p{Mark}\d’'-]{1,16}$/u.test(word)) group.className = 'cd-lyric-word';
+      for (const {segment:glyph} of graphemes.segment(word)) {
+        const slot = document.createElement('span');
+        slot.className = 'cd-lyric-slot';
+        const measure = document.createElement('span');
+        measure.textContent = glyph;
+        const reel = document.createElement('span');
+        reel.className = 'cd-lyric-reel';
+        const steps = 4 + reels.length % 3;
+        for (let step = 0; step <= steps; step++) {
+          const face = document.createElement('span');
+          face.textContent = step === steps ? glyph : symbols[Math.floor(Math.random() * symbols.length)];
+          reel.append(face);
+        }
+        slot.append(measure, reel);
+        group.append(slot);
+        reels.push({reel, steps});
+      }
+      visual.append(group);
+    }
+    line.replaceChildren(accessible, visual);
+
+    const animations = reels.map(({reel, steps}, i) => reel.animate([
+      {transform:'translateY(0)'}, {transform:'translateY(-' + (steps * 1.5) + 'em)'},
+    ], {
+      duration:440 + (i % 5) * 23, delay:Math.min(i, 18) * 14,
+      easing:'cubic-bezier(.22,.61,.36,1)', fill:'both',
+    }));
+    function restore() {
+      if (line.contains(visual)) line.textContent = text;
+      for (const animation of animations) animation.cancel();
+    }
+    Promise.allSettled(animations.map(animation => animation.finished)).then(restore);
+    return restore;
   }
 
   function formatTime(seconds) {
@@ -354,8 +417,11 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
 
   function updateTransport() {
     const playing = audio && !audio.paused && !audio.ended && !audio.error;
-    play.toggleAttribute('data-playing', Boolean(playing));
-    play.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+    const action = playing ? 'Pause' : 'Play';
+    if (play.getAttribute('aria-label') !== action) {
+      play.setAttribute('aria-label', action);
+      playLabel.textContent = action.toUpperCase();
+    }
     const length = Number.isFinite(audio?.duration) && !audio.error ? audio.duration : 0;
     const time = length ? Math.min(audio.currentTime, length) : 0;
     seek.disabled = restart.disabled = !length;
@@ -447,13 +513,44 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
   function returnToCovers(event) {
     if (player.hidden) return;
     event.stopImmediatePropagation();
+    if (returning) return;
     clearTransport();
-    player.hidden = true;
     browser.hidden = false;
-    back.setAttribute('aria-label', 'Back to Playlist');
     measure();
-    queuePreview();
-    books[selected].button.focus({preventScroll:true});
+
+    function finish() {
+      player.hidden = true;
+      player.inert = browser.inert = false;
+      browser.removeAttribute('data-returning');
+      returning = false;
+      if (!host.isConnected) return;
+      back.setAttribute('aria-label', 'Back to Playlist');
+      queuePreview();
+      books[selected].button.focus({preventScroll:true});
+    }
+
+    const from = playerCover.getBoundingClientRect();
+    const to = books[selected].face.getBoundingClientRect();
+    if (motion.matches || !playerCover.animate || !from.width || !to.width) {
+      finish();
+      return;
+    }
+    returning = true;
+    player.inert = browser.inert = true;
+    browser.setAttribute('data-returning', '');
+    for (const animation of player.getAnimations()) animation.cancel();
+    const transform = 'translate(' + (to.left - from.left) + 'px,' + (to.top - from.top) + 'px) scale(' +
+      (to.width / from.width) + ',' + (to.height / from.height) + ')';
+    const travel = playerCover.animate([
+      {transform:'none', transformOrigin:'top left'},
+      {transform, transformOrigin:'top left'},
+    ], {duration:470, easing:'cubic-bezier(.22,.74,.26,1)'});
+    const fade = [{opacity:1}, {opacity:0}];
+    const fades = [trackTitle.parentElement, transport].map(section =>
+      section.animate(fade, {duration:200, fill:'forwards'}));
+    travel.finished.then(finish, finish).finally(() => {
+      for (const animation of fades) animation.cancel();
+    });
   }
 
   back.addEventListener('click', returnToCovers, {capture:true, signal});
