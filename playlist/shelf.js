@@ -37,7 +37,7 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
       <button class="cd-case cd-player-art" type="button" aria-label="Back to covers"></button>
       <section class="cd-lyrics" aria-label="Lyrics" hidden>
         <h4>Lyrics</h4>
-        <p class="cd-lyric-line" tabindex="0"></p>
+        <div class="cd-lyric-window"><div class="cd-lyric-track"></div></div>
       </section>
       <div class="cd-transport" role="group" aria-label="Playback controls">
         <button class="cd-control cd-play" type="button" aria-label="Play">
@@ -66,7 +66,8 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
   const trackArtist = player.querySelector('small');
   const playerCover = player.querySelector('.cd-player-art');
   const lyrics = player.querySelector('.cd-lyrics');
-  const lyricLine = lyrics.querySelector('.cd-lyric-line');
+  const lyricWindow = lyrics.querySelector('.cd-lyric-window');
+  const lyricTrack = lyrics.querySelector('.cd-lyric-track');
   const transport = host.querySelector('.cd-transport');
   const play = transport.querySelector('.cd-play');
   const playLabel = play.firstElementChild;
@@ -348,90 +349,65 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
     } else if (!frame) frame = requestAnimationFrame(tick);
   }
 
-  function fitLyric() {
-    lyricLine.style.fontSize = '';
-    const {clientWidth, scrollWidth} = lyricLine;
-    if (clientWidth && scrollWidth > clientWidth) {
-      const size = parseFloat(getComputedStyle(lyricLine).fontSize);
-      lyricLine.style.fontSize = Math.max(18, size * clientWidth / scrollWidth - .5) + 'px';
+  function fitLyrics() {
+    for (const text of lyricTrack.querySelectorAll('.cd-lyric-text')) {
+      text.style.fontSize = '';
+      const {clientWidth, scrollWidth} = text;
+      if (clientWidth && scrollWidth > clientWidth) {
+        const size = parseFloat(getComputedStyle(text).fontSize);
+        const minimum = text.parentElement.hasAttribute('aria-current') ? 18 : 14;
+        text.style.fontSize = Math.max(minimum, size * clientWidth / scrollWidth - .5) + 'px';
+      }
     }
   }
 
   function followPlayback(media, lines) {
     let index = -1;
-    let restoreLine;
+
+    function renderLyrics(next, slide = false) {
+      for (const animation of lyricTrack.getAnimations()) animation.cancel();
+      const first = next - (slide ? 2 : 1);
+      const rows = Array.from({length:slide ? 4 : 3}, (_, offset) => {
+        const cue = first + offset;
+        const row = document.createElement('p');
+        row.className = 'cd-lyric-row';
+        if (cue === next && lines[cue]) row.setAttribute('aria-current', 'true');
+        if (slide && offset === 0) row.setAttribute('aria-hidden', 'true');
+        const text = document.createElement('span');
+        text.className = 'cd-lyric-text';
+        text.textContent = lines[cue]?.text || '';
+        row.append(text);
+        return row;
+      });
+      lyricTrack.replaceChildren(...rows);
+      fitLyrics();
+      if (!slide) return;
+
+      const timing = {duration:340, easing:'cubic-bezier(.22,.74,.26,1)'};
+      const travel = lyricTrack.animate([
+        {transform:'translateY(0)'}, {transform:'translateY(-25%)'},
+      ], {...timing, fill:'forwards'});
+      const colors = [{color:'var(--song-accent)'}, {color:'var(--song-muted)'}];
+      rows[1].animate(colors, timing);
+      rows[2].animate([...colors].reverse(), timing);
+      travel.finished.then(() => {
+        rows[0].remove();
+        travel.cancel();
+      }, () => {});
+    }
 
     function updateCue(event) {
       if (audio !== media) return;
       const next = lines.findLastIndex(line => line.t <= media.currentTime);
       if (next === index) return;
-      restoreLine?.();
-      restoreLine = undefined;
+      const slide = index >= 0 && next === index + 1 && !media.paused && !media.seeking &&
+        event.type !== 'seeked' && !motion.matches && Boolean(lyricTrack.animate);
+      renderLyrics(next, slide);
       index = next;
-      lyricLine.textContent = lines[index]?.text || '';
-      lyricLine.scrollLeft = 0;
-      fitLyric();
-      if (!media.paused && !media.seeking && event.type !== 'seeked' && !motion.matches) {
-        restoreLine = rollLyric(lyricLine);
-      }
     }
 
+    renderLyrics(index);
     for (const event of ['playing', 'timeupdate', 'seeked']) media.addEventListener(event, updateCue);
-  }
-
-  function rollLyric(line) {
-    const text = line.textContent;
-    if (!text.trim() || !Element.prototype.animate || !Intl.Segmenter) return;
-
-    const accessible = document.createElement('span');
-    accessible.className = 'cd-lyric-readable';
-    accessible.textContent = text;
-    const visual = document.createElement('span');
-    visual.setAttribute('aria-hidden', 'true');
-    const words = new Intl.Segmenter(undefined, {granularity:'word'});
-    const graphemes = new Intl.Segmenter();
-    const reels = [];
-    const symbols = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    for (const {segment:word} of words.segment(text)) {
-      if (!word.trim()) {
-        visual.append(word);
-        continue;
-      }
-      const group = document.createElement('span');
-      if (/^[\p{Script=Latin}\p{Mark}\d’'-]{1,16}$/u.test(word)) group.className = 'cd-lyric-word';
-      for (const {segment:glyph} of graphemes.segment(word)) {
-        const slot = document.createElement('span');
-        slot.className = 'cd-lyric-slot';
-        const measure = document.createElement('span');
-        measure.textContent = glyph;
-        const reel = document.createElement('span');
-        reel.className = 'cd-lyric-reel';
-        const steps = 4 + reels.length % 3;
-        for (let step = 0; step <= steps; step++) {
-          const face = document.createElement('span');
-          face.textContent = step === steps ? glyph : symbols[Math.floor(Math.random() * symbols.length)];
-          reel.append(face);
-        }
-        slot.append(measure, reel);
-        group.append(slot);
-        reels.push({reel, steps});
-      }
-      visual.append(group);
-    }
-    line.replaceChildren(accessible, visual);
-
-    const animations = reels.map(({reel, steps}, i) => reel.animate([
-      {transform:'translateY(0)'}, {transform:'translateY(-' + (steps * 1.5) + 'em)'},
-    ], {
-      duration:440 + (i % 5) * 23, delay:Math.min(i, 18) * 14,
-      easing:'cubic-bezier(.22,.61,.36,1)', fill:'both',
-    }));
-    function restore() {
-      if (line.contains(visual)) line.textContent = text;
-      for (const animation of animations) animation.cancel();
-    }
-    Promise.allSettled(animations.map(animation => animation.finished)).then(restore);
-    return restore;
   }
 
   function formatTime(seconds) {
@@ -523,7 +499,7 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
     setText(trackArtist, track.artist, track.artistLang);
     const suppliedLines = lyricsByTrack[track.id];
     const publishedLines = suppliedLines ?? homeMusic.lyricsFor(track.title);
-    lyricLine.textContent = '';
+    lyricTrack.replaceChildren();
     lyrics.hidden = !publishedLines.length;
     homeMusic.audio.pause();
     browser.hidden = true;
@@ -695,12 +671,12 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
   const resize = new ResizeObserver(measure);
   resize.observe(shelf);
   const resizeLyrics = new ResizeObserver(() => {
-    const width = lyricLine.clientWidth;
+    const width = lyricWindow.clientWidth;
     if (width === lyricWidth) return;
     lyricWidth = width;
-    fitLyric();
+    fitLyrics();
   });
-  resizeLyrics.observe(lyricLine);
+  resizeLyrics.observe(lyricWindow);
   measure();
   queuePreview();
   document.addEventListener('visibilitychange', () => {
