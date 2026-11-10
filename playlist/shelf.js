@@ -162,7 +162,7 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
         media.play().then(update, finish);
       }, {once:true});
       media.src = trackStream(track);
-    }, Math.max(1000, fadeUntil - performance.now()));
+    }, Math.max(1000, Math.max(fadeUntil, homeMusic.previewReadyAt()) - performance.now()));
   }
 
   function setText(element, value, language) {

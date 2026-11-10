@@ -955,6 +955,11 @@
     letter-spacing: -.04em;
   }
   .guestbook-masthead svg { width: 23px; height: 23px; color: var(--song-accent); }
+  .guestbook-note {
+    margin-bottom: 14px;
+    color: var(--song-muted);
+    font: 400 13px/1.5 var(--sans);
+  }
   .guestbook [data-disfora-comments] {
     min-width: 0;
     --dfs-widget-bg: transparent;
@@ -1338,6 +1343,7 @@
             <path d="M12 3h.01M12 7.5h.01M3 12h.01M7.5 12h.01M12 12h.01M16.5 12h.01M21 12h.01M12 16.5h.01M12 21h.01"/>
           </svg>
         </header>
+        <p class="guestbook-note">Guest messages are saved for review and appear here after approval.</p>
         <div id="guestbookBody"></div>
       </div>
         <template id="guestbookPreview">
@@ -1900,16 +1906,17 @@
       }
 
       var finishThemeFade;
+      var themeFadeUntil = 0;
+      var resumeThemeAfterPlaylist = false;
+
       function stopThemePlayback() {
         if (finishThemeFade) finishThemeFade();
-        else audio.pause();
+        audio.pause();
       }
 
-      function fadeThemePlayback() {
-        if (audio.paused || audio.ended) return;
+      function fadeThemeVolume(target, duration, onFinish) {
         var initial = audio.volume;
         var started = performance.now();
-        var duration = 1000;
         var frame;
         var timer = setTimeout(finish, duration);
 
@@ -1917,19 +1924,41 @@
           finishThemeFade = undefined;
           cancelAnimationFrame(frame);
           clearTimeout(timer);
-          audio.pause();
-          audio.volume = initial;
+          onFinish();
         }
 
         function step(now) {
-          var remaining = Math.max(0, 1 - (now - started) / duration);
-          audio.volume = initial * remaining;
-          if (remaining) frame = requestAnimationFrame(step);
+          var progress = Math.max(0, Math.min(1, (now - started) / duration));
+          audio.volume = initial + (target - initial) * progress;
+          if (progress < 1) frame = requestAnimationFrame(step);
           else finish();
         }
 
         finishThemeFade = finish;
         frame = requestAnimationFrame(step);
+      }
+
+      function fadeThemePlayback() {
+        finishThemeFade?.();
+        resumeThemeAfterPlaylist = !audio.paused && !audio.ended;
+        if (!resumeThemeAfterPlaylist) return;
+        var normalVolume = audio.volume;
+        var duration = 2500;
+        themeFadeUntil = performance.now() + duration;
+        fadeThemeVolume(0, duration, function () {
+          themeFadeUntil = 0;
+          audio.pause();
+          audio.volume = normalVolume;
+        });
+      }
+
+      function resumeThemePlayback() {
+        var normalVolume = audio.volume;
+        audio.volume = 0;
+        fadeThemeVolume(normalVolume, 1600, function () {
+          audio.volume = normalVolume;
+        });
+        startPlayback();
       }
 
       audio.addEventListener('timeupdate', function () {
@@ -1964,7 +1993,7 @@
         btn.setAttribute('aria-pressed', 'true');
       });
       audio.addEventListener('pause', function () {
-        finishThemeFade?.();
+        if (audio.paused) finishThemeFade?.();
         btn.setAttribute('aria-pressed', 'false');
       });
       btn.addEventListener('click', function () {
@@ -2082,9 +2111,10 @@
           archive.className = 'cd-archive';
           playlistPlayer.replaceChildren(archive);
           profilePanel.classList.add('has-archive-shelf');
-          import('./playlist/shelf.js?v=13').then(function (module) {
+          import('./playlist/shelf.js?v=14').then(function (module) {
             return module.mountPlaylistShelf(archive, profileBack, {
               stopPlayback: stopThemePlayback,
+              previewReadyAt: function () { return themeFadeUntil; },
               lyricsFor: function (title) {
                 return tracks.find(function (track) {
                   return track.title.toLowerCase() === title.toLowerCase();
@@ -2141,7 +2171,9 @@
       });
 
       function closeProfile() {
-        finishThemeFade?.();
+        var resumeTheme = stage.hasAttribute('data-playlist-open') && resumeThemeAfterPlaylist;
+        if (resumeTheme) finishThemeFade?.();
+        resumeThemeAfterPlaylist = false;
         disposePlaylistShelf?.();
         disposePlaylistShelf = undefined;
         profilePanel.classList.remove('has-archive-shelf');
@@ -2154,6 +2186,7 @@
         heroCopy.inert = false;
         (menuOpen ? profileTrigger : btn).focus({ preventScroll: true });
         profilePanel.inert = true;
+        if (resumeTheme) resumeThemePlayback();
         if (menuOpen) replayOpenSection(0);
       }
 
