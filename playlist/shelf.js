@@ -28,7 +28,6 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
         <button type="button" data-step="1" aria-label="Next cover">→</button>
         <p class="cd-shelf-hint">Swipe to browse · Tap cover to open</p>
       </div>
-      <section class="cd-home-lyrics" aria-label="同步歌詞" hidden></section>
     </div>
     <div class="cd-player" hidden>
       <div class="cd-player-title">
@@ -61,7 +60,6 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
   const shelf = host.querySelector('.cd-shelf');
   const title = host.querySelector('.cd-caption strong');
   const meta = host.querySelector('.cd-caption small');
-  const homeLyrics = host.querySelector('.cd-home-lyrics');
   const trackTitle = player.querySelector('h3');
   const trackArtist = player.querySelector('small');
   const playerCover = player.querySelector('.cd-player-art');
@@ -92,8 +90,6 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
   let drag;
   let suppressClick = false;
   let wheelStop;
-  let lastLyricLines;
-  let lastLyricIndex = -1;
   let audio;
   let stream;
   let volume = .8;
@@ -105,6 +101,7 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
   let fadingAudio;
   let fadeFrame;
   let fadeTimer;
+  let fadeUntil = 0;
   let lyricWidth;
   let stopFollowingLyrics;
 
@@ -160,35 +157,17 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
           media.volume = volume * Math.max(0, Math.min(1, elapsed / fade, (length - elapsed) / fade));
           previewFrame = requestAnimationFrame(update);
         }
+        stopFade();
+        homeMusic.stopPlayback();
         media.play().then(update, finish);
       }, {once:true});
       media.src = trackStream(track);
-    }, 3000);
+    }, Math.max(1000, fadeUntil - performance.now()));
   }
 
   function setText(element, value, language) {
     element.textContent = value;
     element.lang = language || '';
-  }
-
-  function updateHomeLyrics() {
-    const {lines, index} = homeMusic.currentCue();
-    if (homeMusic.audio.paused || index < 0) {
-      homeLyrics.hidden = true;
-      return;
-    }
-    homeLyrics.hidden = false;
-    if (lines === lastLyricLines && index === lastLyricIndex) return;
-    lastLyricLines = lines;
-    lastLyricIndex = index;
-    const cues = document.createElement('div');
-    cues.className = 'cd-home-lyric-cues';
-    for (const offset of [-1, 0, 1]) {
-      const line = document.createElement('p');
-      line.textContent = lines[index + offset]?.text || '';
-      cues.append(line);
-    }
-    homeLyrics.replaceChildren(cues);
   }
 
   function cover(track) {
@@ -460,6 +439,7 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
   function stopFade() {
     cancelAnimationFrame(fadeFrame);
     clearTimeout(fadeTimer);
+    fadeUntil = 0;
     if (!fadingAudio) return;
     releaseAudio(fadingAudio);
     fadingAudio.remove();
@@ -479,6 +459,7 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
       const initial = media.volume;
       const start = performance.now();
       const duration = 2000;
+      fadeUntil = start + duration;
       function step(now) {
         const remaining = Math.max(0, 1 - (now - start) / duration);
         media.volume = initial * remaining;
@@ -509,6 +490,7 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
   }
 
   function playTrack(media) {
+    homeMusic.stopPlayback();
     if (!media.hasAttribute('src') || media.error) media.src = stream;
     stopFade();
     showStatus('');
@@ -528,7 +510,6 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
     cancelAnimationFrame(frame);
     frame = lastFrame = 0;
     position = target = Math.round(position);
-    homeMusic.audio.pause();
     browser.hidden = true;
     player.hidden = false;
     const media = document.createElement('audio');
@@ -710,10 +691,6 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
     stopPreview();
     if (!document.hidden) queuePreview();
   }, {signal});
-  for (const name of ['timeupdate', 'playing', 'pause', 'emptied']) {
-    homeMusic.audio.addEventListener(name, updateHomeLyrics, {signal});
-  }
-  updateHomeLyrics();
 
   return () => {
     controller.abort();

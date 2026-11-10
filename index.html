@@ -641,22 +641,6 @@
     color: var(--song-ink);
   }
   .cd-player-title > p { padding-bottom: 10px; border-bottom: 1px solid var(--song-rule); text-transform: uppercase; }
-  .cd-home-lyrics {
-    position: absolute;
-    inset: calc(67% + 92px) 8vw auto;
-    text-align: center;
-    color: var(--song-ink);
-    font: 400 clamp(16px, 2.1vw, 26px)/1.4 var(--serif);
-  }
-  .cd-home-lyric-cues p { min-height: 1.4em; }
-  .cd-home-lyric-cues p:not(:nth-child(2)) { opacity: .42; }
-  @media (prefers-reduced-motion: no-preference) {
-    .cd-home-lyric-cues { animation: cd-lyric-roll .38s cubic-bezier(.22,.74,.26,1) both; }
-    @keyframes cd-lyric-roll {
-      from { opacity: .5; transform: translateY(.7em); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  }
   .cd-lyrics {
     grid-column: 1 / -1;
     min-width: 0;
@@ -1915,6 +1899,39 @@
         audio.play().catch(function () {});
       }
 
+      var finishThemeFade;
+      function stopThemePlayback() {
+        if (finishThemeFade) finishThemeFade();
+        else audio.pause();
+      }
+
+      function fadeThemePlayback() {
+        if (audio.paused || audio.ended) return;
+        var initial = audio.volume;
+        var started = performance.now();
+        var duration = 1000;
+        var frame;
+        var timer = setTimeout(finish, duration);
+
+        function finish() {
+          finishThemeFade = undefined;
+          cancelAnimationFrame(frame);
+          clearTimeout(timer);
+          audio.pause();
+          audio.volume = initial;
+        }
+
+        function step(now) {
+          var remaining = Math.max(0, 1 - (now - started) / duration);
+          audio.volume = initial * remaining;
+          if (remaining) frame = requestAnimationFrame(step);
+          else finish();
+        }
+
+        finishThemeFade = finish;
+        frame = requestAnimationFrame(step);
+      }
+
       audio.addEventListener('timeupdate', function () {
         if (!audio.duration) return;
         var lyrics = tracks[current].lyrics;
@@ -1931,6 +1948,7 @@
       });
 
       audio.addEventListener('ended', function () {
+        finishThemeFade?.();
         current = (current + 1) % tracks.length;
         renderTrack(current);
         startPlayback();
@@ -1946,6 +1964,7 @@
         btn.setAttribute('aria-pressed', 'true');
       });
       audio.addEventListener('pause', function () {
+        finishThemeFade?.();
         btn.setAttribute('aria-pressed', 'false');
       });
       btn.addEventListener('click', function () {
@@ -2053,7 +2072,7 @@
         stage.toggleAttribute('data-playlist-open', isPlaylist);
         if (isPlaylist) {
           btn.setAttribute('aria-disabled', 'true');
-          audio.pause();
+          fadeThemePlayback();
         }
         var showPlaylistPlayer = isPlaylist && !profilePanel.querySelector('.local-listening');
         profilePanel.classList.toggle('has-playlist-player', showPlaylistPlayer);
@@ -2063,10 +2082,9 @@
           archive.className = 'cd-archive';
           playlistPlayer.replaceChildren(archive);
           profilePanel.classList.add('has-archive-shelf');
-          import('./playlist/shelf.js?v=12').then(function (module) {
+          import('./playlist/shelf.js?v=13').then(function (module) {
             return module.mountPlaylistShelf(archive, profileBack, {
-              audio: audio,
-              currentCue: function () { return {lines: tracks[current].lyrics, index: currentLine}; },
+              stopPlayback: stopThemePlayback,
               lyricsFor: function (title) {
                 return tracks.find(function (track) {
                   return track.title.toLowerCase() === title.toLowerCase();
@@ -2123,6 +2141,7 @@
       });
 
       function closeProfile() {
+        finishThemeFade?.();
         disposePlaylistShelf?.();
         disposePlaylistShelf = undefined;
         profilePanel.classList.remove('has-archive-shelf');
