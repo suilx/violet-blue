@@ -64,6 +64,11 @@
     inherits: true;
     initial-value: #efede7;
   }
+  @property --song-paper-end {
+    syntax: "<color>";
+    inherits: false;
+    initial-value: transparent;
+  }
   @property --song-ink {
     syntax: "<color>";
     inherits: true;
@@ -103,11 +108,12 @@
     top: 0;
     height: 100svh;
     overflow: clip;
-    background: var(--song-paper);
+    background: linear-gradient(transparent, var(--song-paper-end)), var(--song-paper);
   }
   @media (prefers-reduced-motion: no-preference) {
     .stage {
-      transition: --song-paper 2.35s ease-in-out, --song-ink 2.35s ease-in-out,
+      transition: --song-paper 2.35s ease-in-out, --song-paper-end 2.35s ease-in-out,
+        --song-ink 2.35s ease-in-out,
         --song-accent 2.35s ease-in-out, --song-muted 2.35s ease-in-out,
         --song-rule-ink 2.35s ease-in-out, --song-rank 2.35s ease-in-out,
         --song-rank-alt 2.35s ease-in-out;
@@ -1680,7 +1686,7 @@
         { bg:'#000000', fg:'#c8c1b6', dim:'#9a9a9a', ink:'200,193,182', shade:'0,0,0',     panel:'6,6,6', inverted:true, accent:'#c8c1b6' },
         { bg:'#152d50', fg:'#e99254', dim:'#cf956d', ink:'233,146,84', shade:'16,31,54',    panel:'21,45,80', dropBeam:true },
         { bg:'#43171f', fg:'#f3dfa9', dim:'#d9c59d', ink:'243,223,169', shade:'30,10,15',    panel:'67,23,31', rose:true },
-        { bg:'#f4eddf', fg:'#36598b', dim:'#4d6283', ink:'54,89,139',   shade:'228,221,207', panel:'244,237,223', looseCross:true },
+        { bg:'#1c6f6f', bgEnd:'#163939', fg:'#ffffff', dim:'#d0e5e3', ink:'255,255,255', shade:'22,57,57', panel:'26,86,86', looseCross:true },
         { bg:'#2a2310', fg:'#c9a8e8', dim:'#a08ab0', ink:'201,168,232', shade:'15,13,6',    panel:'42,35,16', hideCross:true },
         { bg:'#0f2820', fg:'#e0a0c0', dim:'#b0a0b8', ink:'224,160,192', shade:'6,15,12',    panel:'15,40,32', doubleBeam:true }
       ];
@@ -1774,6 +1780,7 @@
         r.setProperty('--shade', c.shade);
         r.setProperty('--panel', c.panel);
         stage.style.setProperty('--song-paper', i === 0 ? '' : c.bg);
+        stage.style.setProperty('--song-paper-end', c.bgEnd || 'transparent');
         stage.style.setProperty('--song-ink', i === 0 ? '' : c.fg);
         stage.style.setProperty('--song-accent', i === 0 ? '' : c.accent || c.fg);
         stage.style.setProperty('--song-muted', i === 0 ? '' : c.dim);
