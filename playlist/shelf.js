@@ -106,6 +106,7 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
   let fadeFrame;
   let fadeTimer;
   let lyricWidth;
+  let stopFollowingLyrics;
 
   function trackStream(track) {
     return 'https://music.163.com/song/media/outer/url?id=' + track.id + '.mp3';
@@ -264,7 +265,9 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
     if (browser.hidden) return;
     const shelfWidth = shelf.clientWidth;
     if (!shelfWidth) return;
-    const {offsetHeight:height, offsetWidth:width} = books[Math.max(0, selected)].button;
+    const selectedCover = books[Math.max(0, selected)].button;
+    selectedCover.hidden = false;
+    const {offsetHeight:height, offsetWidth:width} = selectedCover;
     const compact = shelfWidth < 540;
     const radius = compact ? 5 : 8;
     const reach = Math.min(shelfWidth * .46, height * 1.65);
@@ -407,7 +410,11 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
     }
 
     renderLyrics(index);
-    for (const event of ['playing', 'timeupdate', 'seeked']) media.addEventListener(event, updateCue);
+    const cues = new AbortController();
+    for (const event of ['playing', 'timeupdate', 'seeked']) {
+      media.addEventListener(event, updateCue, {signal:cues.signal});
+    }
+    return () => cues.abort();
   }
 
   function formatTime(seconds) {
@@ -461,6 +468,8 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
 
   function clearTransport(fade = false) {
     stopFade();
+    stopFollowingLyrics?.();
+    stopFollowingLyrics = undefined;
     const media = audio;
     audio = undefined;
     if (!media) return;
@@ -484,6 +493,33 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
     media.remove();
   }
 
+  function displayTrack(track, media) {
+    stream = trackStream(track);
+    const {insert, image} = cover(track);
+    if (track.cover) image.src = track.cover;
+    playerCover.replaceChildren(insert);
+    setText(trackTitle, track.title, track.titleLang);
+    setText(trackArtist, track.artist, track.artistLang);
+    const suppliedLines = lyricsByTrack[track.id];
+    const publishedLines = suppliedLines ?? homeMusic.lyricsFor(track.title);
+    stopFollowingLyrics?.();
+    lyricTrack.replaceChildren();
+    lyrics.hidden = !publishedLines.length;
+    stopFollowingLyrics = publishedLines.length ? followPlayback(media, publishedLines) : undefined;
+  }
+
+  function playTrack(media) {
+    if (!media.hasAttribute('src') || media.error) media.src = stream;
+    stopFade();
+    showStatus('');
+    media.play().catch(error => {
+      if (audio === media && error.name !== 'AbortError') {
+        updateTransport();
+        showStatus('Playback unavailable. Press play to retry.');
+      }
+    });
+  }
+
   function showPlayer(track, face) {
     const origin = face.getBoundingClientRect();
     stopPreview();
@@ -492,28 +528,18 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
     cancelAnimationFrame(frame);
     frame = lastFrame = 0;
     position = target = Math.round(position);
-    const {insert, image} = cover(track);
-    if (track.cover) image.src = track.cover;
-    playerCover.replaceChildren(insert);
-    setText(trackTitle, track.title, track.titleLang);
-    setText(trackArtist, track.artist, track.artistLang);
-    const suppliedLines = lyricsByTrack[track.id];
-    const publishedLines = suppliedLines ?? homeMusic.lyricsFor(track.title);
-    lyricTrack.replaceChildren();
-    lyrics.hidden = !publishedLines.length;
     homeMusic.audio.pause();
     browser.hidden = true;
     player.hidden = false;
     const media = document.createElement('audio');
     audio = media;
-    stream = trackStream(track);
     media.hidden = true;
     transport.append(media);
+    displayTrack(track, media);
     updateTransport();
     updateVolume();
     showStatus('');
-    if (publishedLines.length) followPlayback(media, publishedLines);
-    for (const event of ['durationchange', 'timeupdate', 'play', 'pause', 'ended', 'error', 'playing', 'waiting']) {
+    for (const event of ['emptied', 'durationchange', 'timeupdate', 'play', 'pause', 'error', 'playing', 'waiting']) {
       media.addEventListener(event, () => {
         if (audio !== media) return;
         updateTransport();
@@ -522,6 +548,15 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
         else if (event === 'playing' || (event === 'pause' && !media.error)) showStatus('');
       });
     }
+    media.addEventListener('ended', () => {
+      if (audio !== media) return;
+      position = target = Math.round(position) + 1;
+      const next = wrap(position);
+      updateSelection(next);
+      displayTrack(tracks[next], media);
+      media.src = stream;
+      playTrack(media);
+    });
     back.setAttribute('aria-label', 'Back to covers');
     if (!motion.matches && origin.width) {
       const bounds = player.getBoundingClientRect();
@@ -586,15 +621,7 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
       media.pause();
       return;
     }
-    if (!media.hasAttribute('src') || media.error) media.src = stream;
-    stopFade();
-    showStatus('');
-    media.play().catch(error => {
-      if (audio === media && error.name !== 'AbortError') {
-        updateTransport();
-        showStatus('Playback unavailable. Press play to retry.');
-      }
-    });
+    playTrack(media);
   });
   seek.addEventListener('input', () => {
     if (audio && !seek.disabled) {
