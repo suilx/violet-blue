@@ -548,8 +548,8 @@
     text-orientation: upright;
     min-block-size: 0;
     overflow: hidden;
-    font: 400 clamp(8px, 1.5svh, 14px)/1 'Six Caps', 'Songti TC', PMingLiU, serif;
-    letter-spacing: .09em;
+    font: 500 clamp(8px, 1.5svh, 13px)/1.1 var(--sans);
+    letter-spacing: .025em;
     text-transform: uppercase;
   }
   .cd-spine small { font: 400 8px/1 var(--sans); }
@@ -633,8 +633,9 @@
   .cd-player {
     display: grid;
     grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) auto;
-    gap: clamp(16px, 4svh, 42px) 6vw;
+    grid-template-rows: minmax(0, 1fr);
+    grid-auto-rows: auto;
+    gap: clamp(12px, 2.5svh, 28px) 6vw;
     align-items: center;
     padding: 12svh 8vw 8svh;
     color: var(--song-ink);
@@ -657,15 +658,11 @@
     }
   }
   .cd-lyrics {
-    margin-top: clamp(16px, 3svh, 34px);
+    grid-column: 1 / -1;
+    min-width: 0;
     border-top: 1px solid var(--song-rule);
-    padding-top: 10px;
-  }
-  .cd-lyrics-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    padding-top: 8px;
+    font: 400 clamp(27px, 4vw, 52px)/1.5 var(--serif);
   }
   .cd-lyrics h4 {
     color: var(--song-muted);
@@ -673,30 +670,17 @@
     letter-spacing: .14em;
     text-transform: uppercase;
   }
-  .cd-lyrics-header button {
-    border: 0;
-    padding: 8px 10px;
-    min-height: 44px;
-    background: transparent;
-    color: var(--song-accent);
-    font: 400 11px/1.35 var(--sans);
-    pointer-events: auto;
-    cursor: pointer;
-  }
-  .cd-lyrics-header button:disabled { opacity: .5; cursor: default; }
-  .cd-lyrics-lines {
+  .cd-lyric-line {
     position: relative;
-    max-height: clamp(76px, 24svh, 220px);
-    overflow: auto;
+    min-height: 1.5em;
+    overflow-x: auto;
+    white-space: nowrap;
     scrollbar-width: none;
+    color: var(--song-accent);
     pointer-events: auto;
-    font: 400 clamp(15px, 1.8vw, 23px)/1.5 var(--serif);
   }
-  .cd-lyrics-lines::-webkit-scrollbar { display: none; }
-  .cd-lyrics-lines p + p { margin-top: .4em; }
-  .cd-lyrics-lines.has-active-line p:not([aria-current]) { opacity: .46; }
-  .cd-lyrics-lines [aria-current] { color: var(--song-accent); }
-  .cd-lyrics-lines:focus-visible { outline: 1px solid var(--song-accent); }
+  .cd-lyric-line::-webkit-scrollbar { display: none; }
+  .cd-lyric-line:focus-visible { outline: 1px solid var(--song-accent); }
   .cd-lyric-readable {
     position: absolute;
     width: 1px;
@@ -1951,7 +1935,7 @@
           archive.className = 'cd-archive';
           playlistPlayer.replaceChildren(archive);
           profilePanel.classList.add('has-archive-shelf');
-          import('./playlist/shelf.js?v=8').then(function (module) {
+          import('./playlist/shelf.js?v=9').then(function (module) {
             return module.mountPlaylistShelf(archive, profileBack, {
               audio: audio,
               currentCue: function () { return {lines: tracks[current].lyrics, index: currentLine}; },
