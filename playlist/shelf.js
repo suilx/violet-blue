@@ -26,6 +26,7 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
         <button type="button" data-step="-1" aria-label="Previous cover">←</button>
         <div><strong></strong><small></small></div>
         <button type="button" data-step="1" aria-label="Next cover">→</button>
+        <p class="cd-shelf-hint">Swipe to browse · Tap cover to open</p>
       </div>
       <section class="cd-home-lyrics" aria-label="同步歌詞" hidden></section>
     </div>

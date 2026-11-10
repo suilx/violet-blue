@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="disfora-site-verification" content="efeff8697cdd7787074909018744b167">
 <title>suilx</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Cpath d=%27M8 2h.01M4 6h.01M8 6h.01M12 6h.01M8 10h.01M8 14h.01%27 stroke=%27%2388443f%27 stroke-width=%272%27 stroke-linecap=%27round%27/%3E%3C/svg%3E">
@@ -791,17 +791,8 @@
     outline: 2px solid var(--song-accent);
     outline-offset: 4px;
   }
-  @media (max-width: 560px) {
-    .cd-shelf { --cd-height: min(29svh, 54vw); inset-block-start: 26%; height: 34%; }
-    .cd-caption { inset-block-start: 63%; }
-    .cd-home-lyrics { inset-block-start: calc(63% + 82px); }
-    .cd-player { padding: 14svh 6vw 7svh; }
-  }
   .stage[data-playlist-open].local-archive.profile-open :is(.profile-panel, .archive-player) {
     background: transparent;
-  }
-  @media (max-width: 560px) {
-    .stage[data-playlist-open].profile-open .cross { transform: translateX(-112%); }
   }
   .profile-panel-header {
     display: flex;
@@ -1030,15 +1021,139 @@
   }
   .guestbook-form :is(input, textarea, button):focus-visible { outline: 2px solid var(--song-accent); outline-offset: 2px; }
   .guestbook-form button:is(:hover, :focus-visible) { background: var(--song-paper); color: var(--song-accent); }
+  .phone-header, .phone-theme, .cd-shelf-hint { display: none; }
   @media (max-width: 560px) {
-    .hero-menu { width: min(57vw, 19rem); }
-    .profile-panel { right: 5vw; width: 61vw; }
-    .profile-panel.has-guestbook { width: 68vw; }
-    .profile-panel.has-playlist-player:not(.has-archive-shelf) { width: 84vw; }
-    .profile-panel > * { background: var(--song-paper); }
+    .stage {
+      --phone-gutter: max(clamp(18px, 5vw, 28px), env(safe-area-inset-left), env(safe-area-inset-right));
+      --phone-top: max(12px, env(safe-area-inset-top));
+      --phone-bottom: max(16px, env(safe-area-inset-bottom));
+      height: 100dvh;
+    }
+    .phone-header {
+      position: absolute;
+      z-index: 4;
+      inset: var(--phone-top) var(--phone-gutter) auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+    .phone-mark {
+      color: var(--song-ink);
+      font: 400 27px/1 var(--serif);
+      letter-spacing: .025em;
+    }
+    :is(.phone-header button, .phone-theme) {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-height: 48px;
+      padding: 0 3px;
+      border: 0;
+      background: transparent;
+      color: var(--song-ink);
+      font: 400 12px/1 var(--sans);
+      letter-spacing: .13em;
+      cursor: pointer;
+      pointer-events: auto;
+    }
+    :is(.phone-header button, .phone-theme):focus-visible {
+      outline: 1px solid var(--song-accent);
+      outline-offset: 3px;
+    }
+    .phone-header button span:last-child { color: var(--song-accent); font-size: 17px; }
+    .phone-theme {
+      position: absolute;
+      z-index: 3;
+      left: var(--phone-gutter);
+      bottom: var(--phone-bottom);
+      color: var(--song-accent);
+    }
+    .stage:is(.menu-open, .profile-open) .phone-theme,
+    .stage.profile-open .phone-header { display: none; }
+    .cross { inset-inline: 0; --cross-anchor: 54%; --cross-size: min(104vw, 72svh); }
+    .cross > :is(canvas, svg) { left: 50%; }
+    .cross svg { width: min(72vw, 64svh); }
+    .stage.menu-open .cross { opacity: .12; transform: translateX(16%); }
+    .stage.profile-open .cross { transform: translateX(-80%); }
+    .stage[data-playlist-open].profile-open .cross { opacity: .09; transform: translateX(-35%); }
+    .hero-copy {
+      --title-rest-offset: 0px;
+      inset: calc(var(--phone-top) + 62px) var(--phone-gutter) calc(var(--phone-bottom) + 60px);
+      width: auto;
+    }
+    .song-title { font-size: clamp(46px, 14vw, 74px); }
+    .song-title:empty { display: none; }
+    .hero-copy .lyrics { margin-top: 12px; }
+    .lyrics-line { font-size: clamp(17px, 4.8vw, 23px); line-height: 1.5; row-gap: .25em; }
+    .hero-menu { width: 100%; margin-top: 16px; padding-inline: 2px; }
+    .stage.menu-open .hero-menu { transition-delay: .12s; }
+    .hero-menu :is(summary, .guestbook-entry, .menu-items button, .menu-items a) { min-height: 48px; }
+    .hero-menu > :is(details, .guestbook-entry) { background: color-mix(in srgb, var(--song-paper) 86%, transparent); }
+    .profile-panel:not(.has-archive-shelf) {
+      inset: var(--phone-top) var(--phone-gutter) var(--phone-bottom);
+      width: auto;
+      align-content: start;
+      background: var(--song-paper);
+    }
+    .profile-panel:not(.has-archive-shelf) > .profile-panel-header {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: var(--song-paper);
+    }
     .profile-heroes li { flex-direction: column; align-items: flex-start; gap: 5px; }
-    .stage.profile-open .cross { transform: translateX(-145%); }
-    .lyrics-line { font-size: clamp(15px, 4.6vw, 20px); line-height: 1.5; row-gap: 0.4em; }
+    .has-archive-shelf > :is(.profile-panel-header, .profile-panel-profile) { top: var(--phone-top); }
+    .has-archive-shelf .profile-panel-header { left: var(--phone-gutter); padding-inline: 0; }
+    .has-archive-shelf .profile-panel-profile { right: var(--phone-gutter); }
+    .cd-browser {
+      display: grid;
+      grid-template-rows: auto auto;
+      align-content: center;
+      gap: clamp(18px, 5dvh, 46px);
+      padding-block: calc(var(--phone-top) + 58px) calc(var(--phone-bottom) + 20px);
+    }
+    .cd-shelf {
+      --cd-height: min(32dvh, 57vw);
+      position: relative;
+      inset: auto;
+      height: calc(var(--cd-height) + 24px);
+    }
+    .cd-caption {
+      position: static;
+      translate: none;
+      justify-self: center;
+      width: min(calc(100% - 2 * var(--phone-gutter)), 29rem);
+      grid-template-columns: 48px minmax(0, 1fr) 48px;
+    }
+    .cd-caption strong { font-size: clamp(27px, 8vw, 38px); }
+    .cd-shelf-hint {
+      display: block;
+      grid-column: 1 / -1;
+      margin-top: 12px;
+      color: var(--song-muted);
+      font: 400 11px/1.4 var(--sans);
+    }
+    .cd-player {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto;
+      align-content: safe center;
+      gap: clamp(12px, 2dvh, 20px);
+      padding: calc(var(--phone-top) + 64px) var(--phone-gutter) var(--phone-bottom);
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      pointer-events: auto;
+    }
+    .cd-player-art { grid-row: 1; justify-self: center; width: min(76vw, 36dvh, 300px); }
+    .cd-player-title { grid-row: 2; text-align: center; }
+    .cd-player-title > p { display: none; }
+    .cd-player-title h3 { margin-top: 0; font-size: clamp(27px, 7.5vw, 40px); text-wrap: balance; }
+    .cd-player-title > small { margin-top: 7px; }
+    .cd-lyrics { font-size: clamp(28px, 7vw, 36px); }
+    .cd-transport { grid-template-columns: auto minmax(0, 1fr); gap: 0 12px; padding-top: 7px; }
+    .cd-range { height: 44px; }
+    .cd-volume { grid-column: 2; justify-self: end; width: min(100%, 165px); }
+    .cd-playback-status { grid-column: 1 / -1; }
   }
   @media (prefers-reduced-motion: reduce) {
     .stage .cross,
@@ -1055,6 +1170,11 @@
 </head>
 <body>
   <div class="stage" id="stage">
+    <div class="phone-header">
+      <span class="phone-mark">suilx</span>
+      <button id="phoneMenu" type="button" aria-controls="heroMenu" aria-expanded="false"><span>MENU</span><span aria-hidden="true">+</span></button>
+    </div>
+    <button class="phone-theme" id="phoneTheme" type="button">PLAY THEME</button>
     <div class="hero-copy" id="heroCopy">
       <div class="song-title" id="songTitle" aria-hidden="true"></div>
       <div class="lyrics" id="lyrics">
@@ -1845,6 +1965,14 @@
       var stage = document.getElementById('stage');
       var lyrics = document.getElementById('lyrics');
       var menu = document.getElementById('heroMenu');
+      var phoneMenu = document.getElementById('phoneMenu');
+      var phoneTheme = document.getElementById('phoneTheme');
+      phoneTheme.addEventListener('click', function () { btn.click(); });
+      function syncPhoneTheme() {
+        phoneTheme.textContent = audio.paused ? 'PLAY THEME' : 'PAUSE THEME';
+      }
+      audio.addEventListener('play', syncPhoneTheme);
+      audio.addEventListener('pause', syncPhoneTheme);
       var menuTracks = document.getElementById('menuTracks');
       var reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
       var travel = 1;
@@ -1873,12 +2001,14 @@
         if (open === menuOpen) return;
         menuOpen = open;
         stage.classList.toggle('menu-open', open);
+        phoneMenu.setAttribute('aria-expanded', String(open));
+        phoneMenu.lastElementChild.textContent = open ? '−' : '+';
         lyrics.inert = open;
         if (!open && menu.contains(document.activeElement)) {
           btn.focus({ preventScroll: true });
         }
         menu.inert = !open;
-        if (open) replayOpenSection(470); // Wait for the menu to start fading in.
+        if (open) replayOpenSection(matchMedia('(max-width: 560px)').matches ? 120 : 470);
       }
 
       function measureMenu() {
@@ -1890,6 +2020,10 @@
         if (!scrollFrame) scrollFrame = requestAnimationFrame(paintMenu);
       }, { passive: true });
       window.addEventListener('resize', measureMenu);
+      phoneMenu.addEventListener('click', function () {
+        window.scrollTo({top: menuOpen ? 0 : travel, behavior: 'instant'});
+        paintMenu();
+      });
       measureMenu();
 
       var heroCopy = document.getElementById('heroCopy');
@@ -1935,7 +2069,7 @@
           archive.className = 'cd-archive';
           playlistPlayer.replaceChildren(archive);
           profilePanel.classList.add('has-archive-shelf');
-          import('./playlist/shelf.js?v=9').then(function (module) {
+          import('./playlist/shelf.js?v=10').then(function (module) {
             return module.mountPlaylistShelf(archive, profileBack, {
               audio: audio,
               currentCue: function () { return {lines: tracks[current].lyrics, index: currentLine}; },
