@@ -538,6 +538,7 @@ export async function mountPlaylistShelf(host, back, homeMusic) {
       media.src = stream;
       playTrack(media);
     });
+    playTrack(media);
     back.setAttribute('aria-label', 'Back to covers');
     if (!motion.matches && origin.width) {
       const bounds = player.getBoundingClientRect();

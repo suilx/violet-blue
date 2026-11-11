@@ -2127,7 +2127,7 @@
           archive.className = 'cd-archive';
           playlistPlayer.replaceChildren(archive);
           profilePanel.classList.add('has-archive-shelf');
-          import('./playlist/shelf.js?v=14').then(function (module) {
+          import('./playlist/shelf.js?v=15').then(function (module) {
             return module.mountPlaylistShelf(archive, profileBack, {
               stopPlayback: stopThemePlayback,
               previewReadyAt: function () { return themeFadeUntil; },
