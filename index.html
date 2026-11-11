@@ -867,6 +867,28 @@
   }
   .profile-rank + .profile-rank strong { color: var(--song-rank-alt); }
   .profile-rank small { color: var(--song-muted); }
+  .profile-honor {
+    grid-column: 1 / -1;
+    padding: 20px 0;
+    border-top: 1px solid var(--song-rule);
+  }
+  .profile-honor h3 {
+    color: var(--song-muted);
+    font: 400 11px/1.35 var(--sans);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .profile-honor p {
+    margin: 8px 0;
+    color: var(--song-ink);
+    font: 400 clamp(24px, 3vw, 38px)/1.15 var(--serif);
+  }
+  .profile-honor strong { font-weight: 400; color: var(--song-accent); }
+  .profile-honor small {
+    display: block;
+    color: var(--song-muted);
+    font: 400 11px/1.5 var(--sans);
+  }
   .profile-heroes {
     grid-column: 1 / -1;
     padding: 14px 0 16px;
@@ -1332,6 +1354,11 @@
           <strong>IV</strong>
           <small>Statlocker PP</small>
         </div>
+        <section class="profile-honor" aria-labelledby="deadlockHonorTitle">
+          <h3 id="deadlockHonorTitle">Season 1 · Haze</h3>
+          <p><strong>Top 100</strong> Win Rate</p>
+          <small>Season 1 Ranked · 30+ games · Epic</small>
+        </section>
         <section class="profile-heroes" aria-labelledby="deadlockHeroTitle">
           <h3 id="deadlockHeroTitle">Top heroes</h3>
           <ul>
