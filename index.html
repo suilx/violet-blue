@@ -218,8 +218,18 @@
     font: 400 clamp(42px, min(10.1vw, 17svh), 146px)/1.04 'Six Caps', sans-serif;
     letter-spacing: .035em;
     text-transform: uppercase;
-    pointer-events: none;
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    pointer-events: auto;
   }
+  .song-title[hidden] { display: none; }
+  .song-title:focus-visible { outline: 1px solid var(--song-accent); outline-offset: 6px; }
   .song-title-word, .song-title-letter, .song-title-letter > span { display: inline-block; }
   .song-title-word { white-space: nowrap; }
   .song-title-letter { pointer-events: auto; }
@@ -1165,7 +1175,7 @@
     </div>
     <button class="phone-theme" id="phoneTheme" type="button">PLAY THEME</button>
     <div class="hero-copy" id="heroCopy">
-      <div class="song-title" id="songTitle" aria-hidden="true"></div>
+      <button class="song-title" id="songTitle" type="button" aria-label="切換至下一首" hidden disabled></button>
       <div class="lyrics" id="lyrics">
         <div class="lyrics-body" id="lyricsBody">
           <div class="lyrics-line" id="lyricsLine"></div>
@@ -1230,10 +1240,7 @@
             </a>
           </div>
         </details>
-        <details name="home-menu">
-          <summary>Themes</summary>
-          <div class="menu-items" id="menuTracks"></div>
-        </details>
+
         <details name="home-menu">
           <summary>Playlist</summary>
           <div class="menu-items profile-list">
@@ -1905,6 +1912,9 @@
           songTitle.replaceChildren(buildSongTitle(title));
           songTitleStatus.textContent = title;
         }
+        songTitle.hidden = false;
+        songTitle.disabled = false;
+        songTitle.setAttribute('aria-label', '切換至下一首 ' + tracks[(current + 1) % tracks.length].title);
       }
 
       function startPlayback() {
@@ -2022,7 +2032,6 @@
       }
       audio.addEventListener('play', syncPhoneTheme);
       audio.addEventListener('pause', syncPhoneTheme);
-      var menuTracks = document.getElementById('menuTracks');
       var reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
       var travel = 1;
       var scrollFrame = 0;
@@ -2225,25 +2234,12 @@
       menuSizeObserver.observe(menu);
       for (var section of menu.children) menuSizeObserver.observe(section);
 
-      var trackButtons = tracks.map(function (track, index) {
-        var option = document.createElement('button');
-        option.type = 'button';
-        option.textContent = track.title;
-        option.addEventListener('click', function () {
-          current = index;
-          renderTrack(current);
-          startPlayback();
-          window.scrollTo({ top: 0, behavior: reducedMotion.matches ? 'instant' : 'smooth' });
-        });
-        menuTracks.append(option);
-        return option;
-      });
-
-      audio.addEventListener('playing', function () {
-        trackButtons.forEach(function (option, index) {
-          if (index === current) option.setAttribute('aria-current', 'true');
-          else option.removeAttribute('aria-current');
-        });
+      songTitle.addEventListener('click', function () {
+        if (stage.hasAttribute('data-playlist-open')) return;
+        finishThemeFade?.();
+        current = (current + 1) % tracks.length;
+        renderTrack(current);
+        startPlayback();
       });
 
       var guestbookBody = document.getElementById('guestbookBody');
