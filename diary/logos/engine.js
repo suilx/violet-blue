@@ -25,7 +25,30 @@
     ['运营','營運'],['营销','行銷'],['渠道','通路','依上下文判斷',false],['项目经理','專案經理'],['项目管理','專案管理'],['项目','專案','學科與比賽項目保留原義',false],['绩效','績效'],['预算','預算'],
     ['靠谱','可靠'],['不靠谱','不可靠'],['离谱','誇張'],['挺好用','滿好用'],['挺不错','滿不錯'],['挺方便','滿方便'],['挺好','滿好'],['太牛了','太厲害了'],['牛逼','厲害'],['绝绝子','超讚'],['太给力了','太讚了'],['不给力','不太行'],['很给力','很不錯'],['给力','很讚'],['被种草了','被燒到了'],['被种草','被燒到'],['种草清单','推薦清單'],['种草','種草'],['避雷','避雷'],['踩雷','踩雷'],['内卷','內耗','依上下文判斷',false]
   );
-  const defaults = entries.map((e,i)=>({id:'base-'+i,from:convert(e[0]),to:e[1],note:e[2]||'臺灣常見用詞',enabled:e[3]!==false})).filter(e=>e.from!==e.to);
+  const imported = new Map();
+  let importedIndex=0;
+  function addImported(from,to,source){
+    from=convert(from);to=convert(to);
+    if(!from||from===to)return;
+    imported.set(from,{id:'lexicon-'+importedIndex++,from,to,note:source,enabled:true});
+  }
+  for(const table of root.OpenCC.Locale.to.twp.flat()){
+    for(const item of table.split('|')){const [from,to]=item.split(' ');if(from&&to)addImported(from,to,'OpenCC 臺灣地區詞庫');}
+  }
+  for(const [from,to] of Object.entries(root.LogosLexicon||{}))addImported(from,to,'同文堂詞庫');
+  entries.push(['守望先锋','鬥陣特攻']);
+  for(const [i,e] of entries.entries()){
+    const from=convert(e[0]);
+    if(from!==e[1])imported.set(from,{id:'base-'+i,from,to:e[1],note:e[2]||'臺灣用詞',enabled:e[3]!==false});
+  }
+  const defaults=[...imported.values()];
+  function indexRules(rules){
+    const buckets=new Map();
+    for(const rule of rules){const first=rule.from[0];if(!buckets.has(first))buckets.set(first,[]);buckets.get(first).push(rule);}
+    for(const bucket of buckets.values())bucket.sort((a,b)=>b.from.length-a.from.length);
+    return buckets;
+  }
+  const defaultIndex=indexRules(defaults);
   function contextEnabled(rule,text,pos){
     if(rule.enabled)return true;
     const left=text.slice(0,pos).split(/[。！？!?\n；;]/).pop();
@@ -60,8 +83,8 @@
     return result;
   }
   function run(input,custom=[],overrides=new Map()){
-    const map=new Map(defaults.map(r=>[r.from,r]));custom.forEach(r=>map.set(r.from,r));
-    const rules=[...map.values()].sort((a,b)=>b.from.length-a.from.length);
+    let rules=defaultIndex;
+    if(custom.length){const map=new Map(defaults.map(r=>[r.from,r]));custom.forEach(r=>map.set(r.from,r));rules=indexRules(map.values());}
     const parts=[],found=new Map(); let occurrence=0;
     // Preserve URL/email and inline/fenced code verbatim, including simplified characters.
     const protectedPattern=/(```[\s\S]*?(?:```|$)|`[^`\n]*`|https?:\/\/[^\s<>"'）。，！？]+|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,})/g;
@@ -70,7 +93,7 @@
       if(index%2){parts.push({text:chunk});return;}
       const text=convert(chunk);let pos=0,plain='';
       while(pos<text.length){
-        const rule=rules.find(r=>text.startsWith(r.from,pos));
+        const rule=rules.get(text[pos])?.find(r=>text.startsWith(r.from,pos));
         if(!rule){plain+=text[pos++];continue;}
         if(plain){parts.push({text:regional(plain)});plain='';}
         const id=rule.id+':'+occurrence++;
