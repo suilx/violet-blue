@@ -1,23 +1,13 @@
 <!doctype html>
-<html lang="zh-Hant-TW">
-<head>
+<html lang="zh-Hant-TW"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Λόγος · suilx</title>
-<meta name="description" content="Λόγος · Diary">
+<title>Λόγος · suilx</title><meta name="description" content="Λόγος · Diary">
 <link rel="stylesheet" href="../../site-palette.css"><link rel="stylesheet" href="style.css">
 <script defer src="vendor/opencc.js"></script><script defer src="engine.js"></script><script defer src="app.js"></script>
-</head>
-<body>
+</head><body>
 <header><a class="brand" href="../../">suilx</a><a href="../../#heroMenu">Diary</a><span>I · I</span></header>
-<main>
-<section class="intro"><p class="eyebrow">DIARY / JOHN 1:1</p><h1>Λόγος<span aria-hidden="true">.</span></h1></section>
+<main><section class="intro"><h1>Λόγος<span aria-hidden="true">.</span></h1></section>
 <section class="workspace" aria-label="文字工作台">
-<div class="pane"><div class="pane-head"><label for="source"><span class="symbol">α</span> 起初</label><span id="count">0 字</span></div><textarea id="source" maxlength="20000" spellcheck="false" placeholder="把文字留在這裡……" aria-describedby="hint"></textarea><div class="pane-foot"><button id="example">讀一段</button><button id="clear">清空</button></div></div>
-<div class="pane result-pane"><div class="pane-head"><h2><span class="symbol">Ω</span> 回聲</h2><span id="status" role="status" aria-live="polite">等待字句</span></div><div id="result" class="result" tabindex="0" aria-label="轉換結果"><span class="empty">在另一種語感裡，讀見原意。</span></div><div class="pane-foot"><label class="check"><input type="checkbox" id="highlight" checked>標示改動</label><button id="copy" disabled>複製文字</button></div></div>
-</section>
-<p class="hint" id="hint">停筆片刻，自動整理。連結與程式碼保留原樣；每一處用詞，你都能決定。</p>
-<section class="review"><div class="section-title"><h2>字句之間</h2><span id="changesCount">尚無替換</span></div><div id="changes" class="changes"><p class="muted">有些字不必改，有些只是另一種習慣。</p></div></section>
-<details class="dictionary"><summary>頁邊註</summary><p>自訂替換：每行一組，以「原詞 = 新詞」書寫。只保存在這個瀏覽器。</p><label for="dictionary">你的用詞</label><textarea id="dictionary" spellcheck="false" placeholder="博主 = 創作者&#10;視頻 = 影片" maxlength="10000"></textarea><div class="pane-foot"><span id="dictStatus" role="status"></span><button id="saveDict">儲存註記</button></div></details>
-<footer><span>字句不分高下，只換一種在地的說法。</span><span>文字留在你的裝置。</span></footer>
-</main>
-</body></html>
+<div class="pane"><div class="pane-head"><label for="source" aria-label="原文"><span class="symbol" aria-hidden="true">α</span></label><span id="count"></span></div><textarea id="source" aria-label="原文" maxlength="20000" spellcheck="false"></textarea><div class="pane-foot"><button id="clear">清空</button></div></div>
+<div class="pane result-pane"><div class="pane-head"><label for="result" aria-label="轉換結果"><span class="symbol" aria-hidden="true">Ω</span></label><span id="status" role="status" aria-live="polite"></span></div><textarea id="result" aria-label="轉換結果" spellcheck="false"></textarea><div class="pane-foot"><button id="copy" disabled>複製</button></div></div>
+</section></main></body></html>
